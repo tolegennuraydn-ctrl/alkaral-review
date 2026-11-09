@@ -47,6 +47,7 @@
   .meta { font-size:12px; color:#5d6a55; display:flex; flex-wrap:wrap; gap:6px 12px; }
   .meta b { color:var(--ink); }
   .anote { display:inline-block; font-size:13px; font-weight:600; color:#2F6A2B; background:#EEF4E6; border-radius:8px; padding:6px 10px; margin:-2px 0 8px; }
+  .snote { font-size:13px; font-weight:600; color:#1F4A1D; background:#E3EFD4; border:1px solid #B9D69A; border-radius:8px; padding:7px 10px; margin:0 0 8px; }
   .tag { background:#EEF4E6; color:var(--gd); border-radius:6px; padding:2px 8px; font-weight:600; }
   .card h3 { font-size:18px; font-weight:800; margin:8px 0 10px; line-height:1.3; }
   details { margin:6px 0; font-size:13px; }
@@ -137,7 +138,10 @@ window.REVIEW_BACKEND = async function () {
   }
 
   // ---- who is reviewing: asked once, remembered on this device
+  const q = new URLSearchParams(location.search);
+  const rid = (q.get('r') || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 40), qname = (q.get('name') || '').slice(0, 60);
   let name = ls.get('review_name'), uid = ls.get('review_uid');
+  if (rid && uid !== 'r_' + rid) { uid = 'r_' + rid; ls.set('review_uid', uid); if (qname) { name = qname; ls.set('review_name', name); } }   // personal link
   if (!uid) { uid = 'r_' + Math.random().toString(36).slice(2, 10); ls.set('review_uid', uid); }
   if (!name) name = await new Promise((done) => {
     const bar = document.createElement('div'); bar.className = 'namebar';
@@ -239,6 +243,7 @@ function render() {
           <span>${esc(it.format)}</span><span>${esc(it.lang)}</span><span>${esc(it.segment)}</span></div>
         <h3>${esc(it.title)}</h3>
         ${it.audio_note ? `<div class="anote">${esc(it.audio_note)}</div>` : ''}
+        ${it.status_note ? `<div class="snote">${esc(it.status_note)}</div>` : ''}
         ${it.caption ? `<details><summary>Текст публикации (caption)</summary><pre>${esc(it.caption)}</pre></details>` : ''}
         ${it.notes ? `<details><summary>Как публиковать</summary><pre>${esc(it.notes)}</pre></details>` : ''}
         <div class="actions">${Object.keys(LABEL).map((d) => `<button data-d="${d}" class="${st === d ? 'on' : ''}" ${db ? '' : 'disabled'}>${LABEL[d]}</button>`).join('')}</div>
