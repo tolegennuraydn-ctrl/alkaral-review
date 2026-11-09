@@ -83,8 +83,13 @@
   .lb img { max-width:100%; max-height:100%; border-radius:8px; }
   .lb button { position:absolute; top:14px; right:14px; font:inherit; font-weight:700; background:#fff; color:#111; border:0; border-radius:999px; padding:8px 14px; cursor:pointer; }
   .saved { font-size:12px; color:#5d6a55; min-height:16px; margin-top:4px; }
-  .others { margin-top:10px; font-size:13px; }
-  .others div { padding:6px 10px; border-radius:8px; background:#F7F9F4; margin-top:6px; }
+  .others { font-size:14px; }
+  .others .rv { padding:10px 12px; border-radius:10px; background:#FFFBF2; border:1px solid #EBDDBA; border-left:5px solid #C98A1B; margin:0 0 10px; }
+  .others .rv.d-approve-b { border-left-color:var(--ok); background:#F4FAF1; border-color:#CFE3C4; }
+  .others .rv.d-reject-b { border-left-color:var(--rej); }
+  .others .rvh { font-size:12.5px; color:#5d6a55; margin-bottom:4px; }
+  .others .rvh b { color:var(--ink); font-size:13.5px; }
+  .others .rvt { white-space:pre-wrap; line-height:1.5; }
   .others .d-approve { color:var(--ok); font-weight:700; } .others .d-revise { color:var(--rev); font-weight:700; } .others .d-reject { color:var(--rej); font-weight:700; }
   footer { position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid var(--line); padding:12px 20px; display:flex; gap:14px; align-items:center; justify-content:center; flex-wrap:wrap; z-index:10; }
   footer button { font:inherit; font-weight:800; font-size:15px; background:var(--g); color:#fff; border:0; border-radius:12px; padding:12px 22px; cursor:pointer; }
@@ -244,6 +249,7 @@ function render() {
         <h3>${esc(it.title)}</h3>
         ${it.audio_note ? `<div class="anote">${esc(it.audio_note)}</div>` : ''}
         ${it.status_note ? `<div class="snote">${esc(it.status_note)}</div>` : ''}
+        <div class="others"></div>
         ${it.caption ? `<details><summary>Текст публикации (caption)</summary><pre>${esc(it.caption)}</pre></details>` : ''}
         ${it.notes ? `<details><summary>Как публиковать</summary><pre>${esc(it.notes)}</pre></details>` : ''}
         <div class="actions">${Object.keys(LABEL).map((d) => `<button data-d="${d}" class="${st === d ? 'on' : ''}" ${db ? '' : 'disabled'}>${LABEL[d]}</button>`).join('')}</div>
@@ -260,7 +266,6 @@ function render() {
           <div class="thumbs"></div>
           <div class="voices"></div>
         </div>
-        <div class="others"></div>
       </div>`;
     list.appendChild(card);
     wire(card, it);
@@ -333,11 +338,14 @@ async function renderOthers() {
     if (!box) continue;
     box.innerHTML = '';
     for (const r of rs) {
-      const d = document.createElement('div');
-      const who = document.createElement('b'); who.textContent = (ps[r.uid]?.name || 'Другой проверяющий') + ': ';
-      d.appendChild(who);
-      if (r.decision) { const x = document.createElement('span'); x.className = `d-${r.decision}`; x.textContent = DONE[r.decision] + ' '; d.appendChild(x); }
-      if (r.note) d.appendChild(document.createTextNode('— ' + r.note));
+      const d = document.createElement('div'); d.className = 'rv' + (r.decision ? ` d-${r.decision}-b` : '');
+      const h = document.createElement('div'); h.className = 'rvh';
+      const who = document.createElement('b'); who.textContent = 'Комментарий: ' + (ps[r.uid]?.name || r.who || 'другой проверяющий');
+      h.appendChild(who);
+      if (r.decision) { const x = document.createElement('span'); x.className = `d-${r.decision}`; x.textContent = ' · ' + DONE[r.decision]; h.appendChild(x); }
+      if (r.updated) { const t = new Date(r.updated); if (!isNaN(t)) h.appendChild(document.createTextNode(' · ' + t.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }))); }
+      d.appendChild(h);
+      if (r.note) { const n = document.createElement('div'); n.className = 'rvt'; n.textContent = r.note; d.appendChild(n); }
       box.appendChild(d);
     }
   }
