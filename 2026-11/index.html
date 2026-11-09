@@ -155,11 +155,15 @@ window.REVIEW_BACKEND = async function () {
   const col = (path) => path.split('/')[0];
   const snap = (c) => ({ docs: Object.entries(docs).filter(([p]) => col(p) === c).map(([p, v]) => ({ id: p.split('/')[1], data: () => v })) });
   const notify = (c) => subs.forEach(([sc, cb]) => { if (!c || sc === c) cb(snap(sc)); });
-  const pending = new Set();
+  const pending = new Set(), changedAt = {};   // path → time our own write/delete finished
   async function refresh() {
+    const t0 = Date.now();
     const j = await call({ op: 'list' });
     const next = {}; for (const d of j.docs) next[d.path] = d.data;
-    for (const p of pending) if (docs[p] !== undefined) next[p] = docs[p]; else delete next[p];  // keep writes still in flight
+    // our own changes that are still in flight, or finished after this list was requested, win over the (older) server copy
+    for (const p of new Set([...pending, ...Object.keys(changedAt).filter((p) => changedAt[p] >= t0 - 2000)])) {
+      if (docs[p] !== undefined) next[p] = docs[p]; else delete next[p];
+    }
     docs = next; notify();
   }
   setInterval(() => refresh().catch(() => {}), 20000);
@@ -169,10 +173,10 @@ window.REVIEW_BACKEND = async function () {
     doc(path) {
       return {
         async set(v) { const data = { ...v, who: name }; docs[path] = data; pending.add(path); notify(col(path));
-          try { await call({ op: 'set', path, data }); } finally { pending.delete(path); } },
+          try { await call({ op: 'set', path, data }); } finally { pending.delete(path); changedAt[path] = Date.now(); } },
         async get() { return { id: path.split('/')[1], data: () => docs[path] }; },
         async delete() { delete docs[path]; pending.add(path); notify(col(path));
-          try { await call({ op: 'delete', path }); } finally { pending.delete(path); } },
+          try { await call({ op: 'delete', path }); } finally { pending.delete(path); changedAt[path] = Date.now(); } },
       };
     },
     collection(c) { return { onSnapshot(cb, err) { subs.push([c, cb]); refresh().catch((e) => err && err(e)); return () => {}; } }; },
