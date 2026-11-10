@@ -122,11 +122,11 @@
 <main id="list"></main>
 <div class="lb" id="lb" role="dialog" aria-label="Скриншот"><img alt=""><button type="button">Закрыть ✕</button></div>
 <footer>
-  <span class="fs" style="opacity:.55">версия 10.11 13:33 UTC</span>
+  <span class="fs" style="opacity:.55">версия 10.11 16:54 UTC</span>
   <span class="fs" id="fs"></span>
   <button id="done" disabled>Готово — отправить решения</button>
 </footer>
-<script>window.REVIEW_CONFIG = {"url": "https://script.google.com/macros/s/AKfycbwmMn17LDiwZiK8vuKw0-dK31qMaHZMPuVUeZmpHPs5uyN93RpO70BWAiLC73AjNSoi/exec", "key": "kQaPtJ1RzwtuC3WOKsfUKa0L", "month": "2026-11"}; window.REVIEW_VERSION = "10.11 13:33 UTC";</script>
+<script>window.REVIEW_CONFIG = {"url": "https://script.google.com/macros/s/AKfycbwmMn17LDiwZiK8vuKw0-dK31qMaHZMPuVUeZmpHPs5uyN93RpO70BWAiLC73AjNSoi/exec", "key": "kQaPtJ1RzwtuC3WOKsfUKa0L", "month": "2026-11"}; window.REVIEW_VERSION = "10.11 16:54 UTC";</script>
 <script>
 // Own-site backend for the review page (Nur, 9 Nov 2026: one-tap voice notes on every phone — the claude.ai frame blocks the microphone).
 // Gives the page the same small db/user interface it uses on Claude, backed by a Google Apps Script web app (apps_script/Code.gs):
@@ -337,7 +337,8 @@ function wire(card, it) {
 let writing = Promise.resolve(); const dirty = new Set(), failed = new Set(); let pendingCount = 0;
 // leaving with unsaved or still-saving comments: the browser asks first
 function flushUnsaved() { window.__reviewLeaving = true; setTimeout(() => { window.__reviewLeaving = false; }, 3000); document.querySelectorAll('.card').forEach((card) => { const id = card.id.slice(2), ta = $('textarea', card);
-  if (ta && dirty.has(id) && db && me) save(id, { note: ta.value }, card); }); }
+  const stored = (mine(id) || {}).note || '';
+  if (ta && dirty.has(id) && db && me) { if (ta.value !== stored) save(id, { note: ta.value }, card); else dirty.delete(id); } }); }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushUnsaved(); });
 window.addEventListener('pagehide', flushUnsaved);
 window.addEventListener('beforeunload', (e) => { if (pendingCount > 0 || dirty.size) { e.preventDefault(); e.returnValue = ''; } });
@@ -355,7 +356,7 @@ function save(id, patch, card) {
   const s = $('.saved', card), btn = $('.savebtn', card);
   dirty.add(id); pendingCount++; s.className = 'saved'; s.textContent = 'Сохраняю…'; if (btn) btn.disabled = true;
   writing = writing.then(() => db.doc(`reviews/${k}`).set(next))
-    .then(() => { failed.delete(id); if (reviews[k] === next) dirty.delete(id);
+    .then(() => { failed.delete(id); const ta0 = $('textarea', card); if (!ta0 || ta0.value === (next.note || '')) dirty.delete(id);
       s.className = 'saved ok'; s.textContent = `✅ Сохранено в ${new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`; })
     .catch((e) => { D('note save FAILED', id + ' ' + (e && e.message)); failed.add(id); s.className = 'saved err';
       s.textContent = window.REVIEW_BACKEND ? '❌ Не сохранилось — проверьте интернет и нажмите «Сохранить» ещё раз' : '❌ Не сохранилось — проверьте вход в Claude и нажмите «Сохранить» ещё раз'; })
@@ -409,7 +410,7 @@ $('#done').addEventListener('click', async () => {
   b.disabled = true; b.textContent = 'Сохраняю все комментарии…';
   try {
     document.querySelectorAll('.card').forEach((card) => { const id = card.id.slice(2), ta = $('textarea', card);
-      if (ta && dirty.has(id)) save(id, { note: ta.value }, card); });
+      if (ta && dirty.has(id) && ta.value !== ((mine(id) || {}).note || '')) save(id, { note: ta.value }, card); else dirty.delete(id); });
     await writing;
     if (failed.size) { const n = items.filter((it) => failed.has(it.id)).map((it) => '№' + (it.item || it.id)).join(', ');
       b.textContent = `Не сохранилось: ${n} — нажмите «Сохранить» на этих карточках и ещё раз «Готово»`; b.disabled = false; return; }
