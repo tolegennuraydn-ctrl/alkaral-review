@@ -122,11 +122,11 @@
 <main id="list"></main>
 <div class="lb" id="lb" role="dialog" aria-label="Скриншот"><img alt=""><button type="button">Закрыть ✕</button></div>
 <footer>
-  <span class="fs" style="opacity:.55">версия 10.11 13:21 UTC</span>
+  <span class="fs" style="opacity:.55">версия 10.11 13:33 UTC</span>
   <span class="fs" id="fs"></span>
   <button id="done" disabled>Готово — отправить решения</button>
 </footer>
-<script>window.REVIEW_CONFIG = {"url": "https://script.google.com/macros/s/AKfycbwmMn17LDiwZiK8vuKw0-dK31qMaHZMPuVUeZmpHPs5uyN93RpO70BWAiLC73AjNSoi/exec", "key": "kQaPtJ1RzwtuC3WOKsfUKa0L", "month": "2026-11"}; window.REVIEW_VERSION = "10.11 13:21 UTC";</script>
+<script>window.REVIEW_CONFIG = {"url": "https://script.google.com/macros/s/AKfycbwmMn17LDiwZiK8vuKw0-dK31qMaHZMPuVUeZmpHPs5uyN93RpO70BWAiLC73AjNSoi/exec", "key": "kQaPtJ1RzwtuC3WOKsfUKa0L", "month": "2026-11"}; window.REVIEW_VERSION = "10.11 13:33 UTC";</script>
 <script>
 // Own-site backend for the review page (Nur, 9 Nov 2026: one-tap voice notes on every phone — the claude.ai frame blocks the microphone).
 // Gives the page the same small db/user interface it uses on Claude, backed by a Google Apps Script web app (apps_script/Code.gs):
@@ -474,7 +474,9 @@ async function addAttachment(it, card, blob, kind, name) {
     blobs[id] = URL.createObjectURL(blob);
     atts[id] = meta; renderAttachments(it.id);
     D('upload ok', kind + ' №' + num);
-    st.textContent = kind === 'image' ? `Скриншот ${num} сохранён ✓ — в комментарии можно написать «скриншот ${num}: …»` : `Голосовое ${num} сохранено ✓`;
+    st.textContent = kind === 'image' ? `Скриншот ${num} сохранён ✓ — в комментарии можно написать «скриншот ${num}: …»`
+      : `Голосовое ${num} сохранено ✓` + (card.dataset.quiet === '1' ? ' — ⚠️ но голос почти не слышен: проверьте микрофон и запишите ещё раз' : '');
+    if (kind !== 'image') card.dataset.quiet = '';
   } catch (e) {
     D('upload FAILED', (e && (e.name + ': ' + (e.message || e.code))) || String(e));
     st.textContent = /full|quota|limit|exhaust|too many/i.test(String(e && (e.message || e.code)))
@@ -556,11 +558,21 @@ async function toggleRecord(it, card, btn) {
   }
   const type = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus'].find((t) => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || '';
   const parts = []; const t0 = Date.now(); D('recording', 'mime=' + type);
+  let peak = 0, level = 0, ac = null;
+  try {  // microphone level: shows that the phone actually hears her, warns on silence
+    ac = new (window.AudioContext || window.webkitAudioContext)(); const an = ac.createAnalyser(); an.fftSize = 1024;
+    ac.createMediaStreamSource(stream).connect(an); const buf = new Float32Array(an.fftSize);
+    const meter = () => { if (!recorder) return; an.getFloatTimeDomainData(buf); let sum = 0; for (const v of buf) sum += v * v;
+      level = Math.sqrt(sum / buf.length); peak = Math.max(peak, level); requestAnimationFrame(meter); };
+    if (ac.state === 'suspended') ac.resume(); requestAnimationFrame(meter);
+  } catch (e) { ac = null; }
   recorder = new MediaRecorder(stream, type ? { mimeType: type, audioBitsPerSecond: 32000 } : undefined);
   recorder.ondataavailable = (e) => e.data.size && parts.push(e.data);
-  const tick = setInterval(() => { const s = Math.round((Date.now() - t0) / 1000); btn.textContent = `⏹ Остановить ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; if (s >= 300) recorder.stop(); }, 500);
+  const tick = setInterval(() => { const s = Math.round((Date.now() - t0) / 1000); btn.textContent = `⏹ Остановить ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')} ${ac ? '▮'.repeat(Math.min(5, Math.round(level * 60))).padEnd(5, '▯') : ''}`; if (s >= 300) recorder.stop(); }, 500);
   recorder.onerror = (ev) => { st.textContent = '❌ Запись не удалась: ' + String(ev.error && (ev.error.name + ' ' + ev.error.message) || 'ошибка'); };
-  recorder.onstop = () => { D('recorded', parts.length + ' parts, ' + parts.reduce((n, p) => n + p.size, 0) + ' bytes');
+  recorder.onstop = () => { try { ac && ac.close(); } catch (e) { /* ignore */ }
+    card.dataset.quiet = (ac && peak < 0.02) ? '1' : '';
+    D('recorded peak', peak.toFixed(3)); D('recorded', parts.length + ' parts, ' + parts.reduce((n, p) => n + p.size, 0) + ' bytes');
     if (!parts.length || !parts.reduce((n, p) => n + p.size, 0)) { clearInterval(tick); stream.getTracks().forEach((t) => t.stop()); recorder = null; btn.classList.remove('rec'); btn.textContent = '🎙 Записать голосом';
       st.textContent = '❌ Запись пустая — браузер не записал звук. Попробуйте ещё раз или «🎧 Загрузить голосовое».'; return; } clearInterval(tick); stream.getTracks().forEach((t) => t.stop()); recorder = null; btn.classList.remove('rec'); btn.textContent = '🎙 Записать голосом';
     enqueue(it, card, [[new Blob(parts, { type: type.split(';')[0] || 'audio/webm' }), 'audio']]); };
