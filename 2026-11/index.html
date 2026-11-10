@@ -85,6 +85,10 @@
   .hist { font-size:13px; background:#F4FAF1; border:1px solid #CFE3C4; border-radius:10px; padding:8px 12px; margin:0 0 8px; color:#46503f; }
   .hist b { color:#1F4A1D; display:block; margin-bottom:3px; }
   .hist div { white-space:pre-wrap; max-height:140px; overflow:auto; }
+  .saverow { display:flex; align-items:center; gap:10px; margin-top:6px; flex-wrap:wrap; }
+  .savebtn { font:inherit; font-weight:700; font-size:14px; background:var(--g); color:#fff; border:0; border-radius:10px; padding:9px 16px; cursor:pointer; }
+  .savebtn:disabled { opacity:.6; cursor:default; }
+  .saved.ok { color:#2F6A2B; font-weight:700; } .saved.err { color:#B5452F; font-weight:700; }
   .saved { font-size:12px; color:#5d6a55; min-height:16px; margin-top:4px; }
   .others { font-size:14px; }
   .others .rv { padding:10px 12px; border-radius:10px; background:#FFFBF2; border:1px solid #EBDDBA; border-left:5px solid #C98A1B; margin:0 0 10px; }
@@ -258,7 +262,7 @@ function render() {
         <div class="actions">${Object.keys(LABEL).map((d) => `<button data-d="${d}" class="${st === d ? 'on' : ''}" ${db ? '' : 'disabled'}>${LABEL[d]}</button>`).join('')}</div>
         ${r?.history ? `<div class="hist"><b>Ваш прошлый комментарий${r.history_date ? ' (' + esc(r.history_date) + ')' : ''} — по нему сделана эта новая версия:</b><div>${esc(r.history)}</div></div>` : ''}
         <textarea placeholder="${r?.history ? 'Новый комментарий к этой версии (по старому сделана эта версия). Можно ссылаться: «скриншот 1: …»' : 'Комментарий: что изменить, что нравится… Можно ссылаться: «скриншот 1: …»'}" ${db ? '' : 'disabled'}>${esc(r?.note || '')}</textarea>
-        <div class="saved"></div>
+        <div class="saverow" ${db && me ? '' : 'hidden'}><button type="button" class="savebtn">💾 Сохранить</button><span class="saved"></span></div>
         <div class="att">
           <div class="drop" ${db && me ? '' : 'hidden'}>
             <label>📎 Скриншот<input type="file" accept="image/*" multiple data-kind="image"></label>
@@ -302,7 +306,9 @@ function wire(card, it) {
   card.querySelectorAll('.actions button').forEach((b) => b.addEventListener('click', () => save(it.id, { decision: b.dataset.d }, card)));
   const ta = $('textarea', card);
   let t = null;
-  ta.addEventListener('input', () => { clearTimeout(t); $('.saved', card).textContent = '…'; t = setTimeout(() => save(it.id, { note: ta.value }, card), 900); });
+  const sv = $('.saved', card), btn = $('.savebtn', card);
+  ta.addEventListener('input', () => { clearTimeout(t); dirty.add(it.id); sv.className = 'saved'; sv.textContent = 'Не сохранено — нажмите «Сохранить»'; t = setTimeout(() => save(it.id, { note: ta.value }, card), 4000); });
+  btn?.addEventListener('click', () => { clearTimeout(t); save(it.id, { note: ta.value }, card); });
   const slides = $('.slides', card);
   if (slides) {
     const n = slides.children.length, lab = $('.nav span', card);
@@ -313,7 +319,9 @@ function wire(card, it) {
   }
 }
 
-let writing = Promise.resolve();
+let writing = Promise.resolve(); const dirty = new Set(), failed = new Set(); let pendingCount = 0;
+// leaving with unsaved or still-saving comments: the browser asks first
+window.addEventListener('beforeunload', (e) => { if (pendingCount > 0 || dirty.size) { e.preventDefault(); e.returnValue = ''; } });
 function save(id, patch, card) {
   if (!db || !me) return;
   const k = key(id);
@@ -325,10 +333,14 @@ function save(id, patch, card) {
     card.querySelectorAll('.actions button').forEach((b) => b.classList.toggle('on', b.dataset.d === next.decision));
     progress();
   }
-  const s = $('.saved', card);
+  const s = $('.saved', card), btn = $('.savebtn', card);
+  dirty.add(id); pendingCount++; s.className = 'saved'; s.textContent = 'Сохраняю…'; if (btn) btn.disabled = true;
   writing = writing.then(() => db.doc(`reviews/${k}`).set(next))
-    .then(() => { s.textContent = 'Сохранено ✓'; })
-    .catch(() => { s.textContent = 'Не сохранилось — проверьте вход в Claude и попробуйте ещё раз'; });
+    .then(() => { failed.delete(id); if (reviews[k] === next) dirty.delete(id);
+      s.className = 'saved ok'; s.textContent = `✅ Сохранено в ${new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`; })
+    .catch(() => { failed.add(id); s.className = 'saved err';
+      s.textContent = window.REVIEW_BACKEND ? '❌ Не сохранилось — проверьте интернет и нажмите «Сохранить» ещё раз' : '❌ Не сохранилось — проверьте вход в Claude и нажмите «Сохранить» ещё раз'; })
+    .finally(() => { pendingCount--; if (btn) btn.disabled = false; });
 }
 
 async function renderOthers() {
@@ -375,12 +387,18 @@ function renderFilters(c, open) {
 
 $('#done').addEventListener('click', async () => {
   const b = $('#done');
-  b.disabled = true;
+  b.disabled = true; b.textContent = 'Сохраняю все комментарии…';
   try {
+    document.querySelectorAll('.card').forEach((card) => { const id = card.id.slice(2), ta = $('textarea', card);
+      if (ta && dirty.has(id)) save(id, { note: ta.value }, card); });
     await writing;
+    if (failed.size) { const n = items.filter((it) => failed.has(it.id)).map((it) => '№' + (it.item || it.id)).join(', ');
+      b.textContent = `Не сохранилось: ${n} — нажмите «Сохранить» на этих карточках и ещё раз «Готово»`; b.disabled = false; return; }
     const mineAll = items.map((it) => ({ piece: it.id, ...(mine(it.id) || {}) }));
     await db.doc(`submissions/${seg(me)}`).set({ uid: me, at: new Date().toISOString(), decided: mineAll.filter((r) => r.decision).length, total: items.length });
-    b.textContent = 'Отправлено ✓ — Claude получит решения';
+    const notes = mineAll.filter((r) => (r.note || '').trim()).length, dec = mineAll.filter((r) => r.decision).length;
+    const pl = (n, f) => n + ' ' + f[(n % 10 === 1 && n % 100 !== 11) ? 0 : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20)) ? 1 : 2];
+    b.textContent = `✅ Отправлено: ${pl(dec, ['решение', 'решения', 'решений'])}, ${pl(notes, ['комментарий', 'комментария', 'комментариев'])} — всё сохранено`;
   } catch (e) { b.textContent = 'Не отправилось — попробуйте ещё раз'; b.disabled = false; }
 });
 
