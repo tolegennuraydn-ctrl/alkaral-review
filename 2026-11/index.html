@@ -141,7 +141,7 @@ window.REVIEW_BACKEND = async function () {
       try {
         // text/plain keeps it a "simple" request (no CORS preflight), which Apps Script web apps accept
         const payload = JSON.stringify({ ...body, k: C.key, month: C.month });
-        const r = await fetch(C.url, { method: 'POST', body: payload, keepalive: payload.length < 60000 });
+        const r = await fetch(C.url, { method: 'POST', body: payload, keepalive: !!window.__reviewLeaving && payload.length < 60000 });
         const j = await r.json();
         if (!j.ok) throw new Error(j.error || 'error');
         return j;
@@ -322,7 +322,7 @@ function wire(card, it) {
 
 let writing = Promise.resolve(); const dirty = new Set(), failed = new Set(); let pendingCount = 0;
 // leaving with unsaved or still-saving comments: the browser asks first
-function flushUnsaved() { document.querySelectorAll('.card').forEach((card) => { const id = card.id.slice(2), ta = $('textarea', card);
+function flushUnsaved() { window.__reviewLeaving = true; setTimeout(() => { window.__reviewLeaving = false; }, 3000); document.querySelectorAll('.card').forEach((card) => { const id = card.id.slice(2), ta = $('textarea', card);
   if (ta && dirty.has(id) && db && me) save(id, { note: ta.value }, card); }); }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushUnsaved(); });
 window.addEventListener('pagehide', flushUnsaved);
