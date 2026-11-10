@@ -82,6 +82,9 @@
   .lb.on { display:flex; }
   .lb img { max-width:100%; max-height:100%; border-radius:8px; }
   .lb button { position:absolute; top:14px; right:14px; font:inherit; font-weight:700; background:#fff; color:#111; border:0; border-radius:999px; padding:8px 14px; cursor:pointer; }
+  .hist { font-size:13px; background:#F4FAF1; border:1px solid #CFE3C4; border-radius:10px; padding:8px 12px; margin:0 0 8px; color:#46503f; }
+  .hist b { color:#1F4A1D; display:block; margin-bottom:3px; }
+  .hist div { white-space:pre-wrap; max-height:140px; overflow:auto; }
   .saved { font-size:12px; color:#5d6a55; min-height:16px; margin-top:4px; }
   .others { font-size:14px; }
   .others .rv { padding:10px 12px; border-radius:10px; background:#FFFBF2; border:1px solid #EBDDBA; border-left:5px solid #C98A1B; margin:0 0 10px; }
@@ -253,7 +256,8 @@ function render() {
         ${it.caption ? `<details><summary>Текст публикации (caption)</summary><pre>${esc(it.caption)}</pre></details>` : ''}
         ${it.notes ? `<details><summary>Как публиковать</summary><pre>${esc(it.notes)}</pre></details>` : ''}
         <div class="actions">${Object.keys(LABEL).map((d) => `<button data-d="${d}" class="${st === d ? 'on' : ''}" ${db ? '' : 'disabled'}>${LABEL[d]}</button>`).join('')}</div>
-        <textarea placeholder="Комментарий: что изменить, что нравится… Можно ссылаться: «скриншот 1: …»" ${db ? '' : 'disabled'}>${esc(r?.note || '')}</textarea>
+        ${r?.history ? `<div class="hist"><b>Ваш прошлый комментарий${r.history_date ? ' (' + esc(r.history_date) + ')' : ''} — по нему сделана эта новая версия:</b><div>${esc(r.history)}</div></div>` : ''}
+        <textarea placeholder="${r?.history ? 'Новый комментарий к этой версии (по старому сделана эта версия). Можно ссылаться: «скриншот 1: …»' : 'Комментарий: что изменить, что нравится… Можно ссылаться: «скриншот 1: …»'}" ${db ? '' : 'disabled'}>${esc(r?.note || '')}</textarea>
         <div class="saved"></div>
         <div class="att">
           <div class="drop" ${db && me ? '' : 'hidden'}>
@@ -329,7 +333,7 @@ function save(id, patch, card) {
 
 async function renderOthers() {
   const byPiece = {};
-  for (const r of Object.values(reviews)) if (r.uid !== me && (r.decision || r.note)) (byPiece[r.piece] ||= []).push(r);
+  for (const r of Object.values(reviews)) if (r.uid !== me && (r.decision || r.note || r.history)) (byPiece[r.piece] ||= []).push(r);
   const ids = [...new Set(Object.values(byPiece).flat().map((r) => r.uid))];
   let ps = {};
   try { ps = ids.length && user ? await user.profiles(ids) : {}; } catch (e) { ps = {}; }
@@ -346,6 +350,7 @@ async function renderOthers() {
       if (r.updated) { const t = new Date(r.updated); if (!isNaN(t)) h.appendChild(document.createTextNode(' · ' + t.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }))); }
       d.appendChild(h);
       if (r.note) { const n = document.createElement('div'); n.className = 'rvt'; n.textContent = r.note; d.appendChild(n); }
+      if (r.history) { const hh = document.createElement('div'); hh.className = 'rvt'; hh.style.cssText = 'margin-top:6px;color:#5d6a55;font-size:13px'; hh.textContent = `Прошлый комментарий (${r.history_date || 'ранее'}, по нему сделана новая версия): ` + r.history; d.appendChild(hh); }
       box.appendChild(d);
     }
   }
