@@ -122,10 +122,11 @@
 <main id="list"></main>
 <div class="lb" id="lb" role="dialog" aria-label="Скриншот"><img alt=""><button type="button">Закрыть ✕</button></div>
 <footer>
+  <span class="fs" style="opacity:.55">версия 10.11 13:21 UTC</span>
   <span class="fs" id="fs"></span>
   <button id="done" disabled>Готово — отправить решения</button>
 </footer>
-<script>window.REVIEW_CONFIG = {"url": "https://script.google.com/macros/s/AKfycbwmMn17LDiwZiK8vuKw0-dK31qMaHZMPuVUeZmpHPs5uyN93RpO70BWAiLC73AjNSoi/exec", "key": "kQaPtJ1RzwtuC3WOKsfUKa0L", "month": "2026-11"};</script>
+<script>window.REVIEW_CONFIG = {"url": "https://script.google.com/macros/s/AKfycbwmMn17LDiwZiK8vuKw0-dK31qMaHZMPuVUeZmpHPs5uyN93RpO70BWAiLC73AjNSoi/exec", "key": "kQaPtJ1RzwtuC3WOKsfUKa0L", "month": "2026-11"}; window.REVIEW_VERSION = "10.11 13:21 UTC";</script>
 <script>
 // Own-site backend for the review page (Nur, 9 Nov 2026: one-tap voice notes on every phone — the claude.ai frame blocks the microphone).
 // Gives the page the same small db/user interface it uses on Claude, backed by a Google Apps Script web app (apps_script/Code.gs):
@@ -211,10 +212,23 @@ window.REVIEW_BACKEND = async function () {
     async me() { return { name }; },
     async profiles(ids) { const out = {}; for (const v of Object.values(docs)) if (v && ids.includes(v.uid) && v.who) out[v.uid] = { name: v.who }; return out; },
   };
+  // diagnostics (Nur, 10 Nov: «audio is needed. Fix it» — her uploads never reached storage): each step of this visit is written
+  // to submissions/diag-<uid>-<visit> so Claude can see exactly where it stops on a given phone. Best effort, never blocks the page.
+  const visit = Date.now().toString(36), steps = [];
+  window.__diag = (step, info) => {
+    steps.push({ t: new Date().toISOString().slice(11, 19), step, info: info == null ? '' : String(info).slice(0, 300) });
+    const data = { uid, who: name, at: new Date().toISOString(), ua: navigator.userAgent, url: location.href.slice(0, 200),
+      version: window.REVIEW_VERSION || '', mic: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia), rec: typeof MediaRecorder,
+      steps: steps.slice(-40) };
+    clearTimeout(window.__diagT);
+    window.__diagT = setTimeout(() => call({ op: 'set', path: `submissions/diag-${uid}-${visit}`, data }).catch(() => {}), 400);
+  };
+  window.__diag('loaded', 'backend ok');
   return { db, user };
 };
 </script>
 <script>
+const D = (s, i) => { try { window.__diag && window.__diag(s, i); } catch (e) { /* diagnostics are optional */ } };
 const LABEL = { approve: 'Одобрить', revise: 'Доработать', reject: 'Отклонить' };
 const DONE = { approve: 'Одобрено', revise: 'Доработать', reject: 'Отклонено' };
 let items = [], reviews = {}, me = null, db = null, user = null, filter = 'all';
@@ -343,7 +357,7 @@ function save(id, patch, card) {
   writing = writing.then(() => db.doc(`reviews/${k}`).set(next))
     .then(() => { failed.delete(id); if (reviews[k] === next) dirty.delete(id);
       s.className = 'saved ok'; s.textContent = `✅ Сохранено в ${new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`; })
-    .catch(() => { failed.add(id); s.className = 'saved err';
+    .catch((e) => { D('note save FAILED', id + ' ' + (e && e.message)); failed.add(id); s.className = 'saved err';
       s.textContent = window.REVIEW_BACKEND ? '❌ Не сохранилось — проверьте интернет и нажмите «Сохранить» ещё раз' : '❌ Не сохранилось — проверьте вход в Claude и нажмите «Сохранить» ещё раз'; })
     .finally(() => { pendingCount--; if (btn) btn.disabled = false; });
 }
@@ -431,10 +445,11 @@ async function shrinkImage(file) {
 async function addAttachment(it, card, blob, kind, name) {
   const st0 = $('.astatus', card), pre = () => card.dataset.q || '';
   const st = { set textContent(t) { st0.textContent = pre() + t; } };
-  if (!db || !me) { st0.textContent = window.REVIEW_BACKEND ? 'Сначала введите своё имя вверху страницы.' : 'Чтобы прикрепить файл, войдите в Claude.'; return; }
+  if (!db || !me) { D('upload blocked', 'no db/me'); st0.textContent = window.REVIEW_BACKEND ? 'Сначала введите своё имя вверху страницы.' : 'Чтобы прикрепить файл, войдите в Claude.'; return; }
   try {
     if (kind === 'image') { st.textContent = 'Готовлю скриншот…'; blob = await shrinkImage(blob); }
     else if (blob.size > MAX_AUDIO) { st.textContent = 'Голосовое слишком большое (больше 8 МБ). Запишите короче или разделите на части.'; return; }
+    D('upload start', kind + ' ' + blob.type + ' ' + blob.size + ' bytes, piece ' + it.id);
     const data = b64(await blob.arrayBuffer());
     const id = `${seg(it.id)}__${seg(me)}__${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
     let n = Math.ceil(data.length / CHUNK) || 1, fileId = null;
@@ -458,8 +473,10 @@ async function addAttachment(it, card, blob, kind, name) {
     await db.doc(`attachments/${id}`).set(meta);
     blobs[id] = URL.createObjectURL(blob);
     atts[id] = meta; renderAttachments(it.id);
+    D('upload ok', kind + ' №' + num);
     st.textContent = kind === 'image' ? `Скриншот ${num} сохранён ✓ — в комментарии можно написать «скриншот ${num}: …»` : `Голосовое ${num} сохранено ✓`;
   } catch (e) {
+    D('upload FAILED', (e && (e.name + ': ' + (e.message || e.code))) || String(e));
     st.textContent = /full|quota|limit|exhaust|too many/i.test(String(e && (e.message || e.code)))
       ? 'Хранилище этой страницы заполнено — напишите Нур, мы освободим место (текстовые комментарии работают).'
       : (window.REVIEW_BACKEND ? '❌ Не сохранилось — проверьте интернет и попробуйте ещё раз.' : '❌ Не сохранилось — проверьте интернет и вход в Claude и попробуйте ещё раз.')
@@ -527,22 +544,23 @@ async function renderAttachments(piece) {
 let recorder = null;
 async function toggleRecord(it, card, btn) {
   const st = $('.astatus', card);
-  if (recorder) { recorder.stop(); return; }
+  if (recorder) { D('rec stop tap', it.id); recorder.stop(); return; }
+  D('rec start tap', it.id + ' MIC_IN_PAGE=' + MIC_IN_PAGE);
   let stream;
   try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
-  catch (e) {  // blocked after all (e.g. iPhone): switch this button to the phone recorder and open it
+  catch (e) { D('getUserMedia failed', (e && e.name) + ' ' + (e && e.message));  // blocked after all (e.g. iPhone): switch this button to the phone recorder and open it
     const lab = document.createElement('label'); lab.className = 'micbtn'; lab.innerHTML = '🎙 Записать голосом<input type="file" accept="audio/*" capture data-kind="audio">';
     btn.replaceWith(lab); const inp = $('input', lab); inp.addEventListener('change', () => { const f = [...inp.files]; inp.value = ''; if (f.length) enqueue(it, card, f.map((x) => [x, 'audio'])); });
     try { inp.click(); } catch (_) { /* the user taps it again */ }
     st.textContent = 'Открываю запись на телефоне. Если запись не открылась — нажмите «🎙 Записать голосом» ещё раз.'; return;
   }
   const type = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus'].find((t) => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || '';
-  const parts = []; const t0 = Date.now();
+  const parts = []; const t0 = Date.now(); D('recording', 'mime=' + type);
   recorder = new MediaRecorder(stream, type ? { mimeType: type, audioBitsPerSecond: 32000 } : undefined);
   recorder.ondataavailable = (e) => e.data.size && parts.push(e.data);
   const tick = setInterval(() => { const s = Math.round((Date.now() - t0) / 1000); btn.textContent = `⏹ Остановить ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; if (s >= 300) recorder.stop(); }, 500);
   recorder.onerror = (ev) => { st.textContent = '❌ Запись не удалась: ' + String(ev.error && (ev.error.name + ' ' + ev.error.message) || 'ошибка'); };
-  recorder.onstop = () => {
+  recorder.onstop = () => { D('recorded', parts.length + ' parts, ' + parts.reduce((n, p) => n + p.size, 0) + ' bytes');
     if (!parts.length || !parts.reduce((n, p) => n + p.size, 0)) { clearInterval(tick); stream.getTracks().forEach((t) => t.stop()); recorder = null; btn.classList.remove('rec'); btn.textContent = '🎙 Записать голосом';
       st.textContent = '❌ Запись пустая — браузер не записал звук. Попробуйте ещё раз или «🎧 Загрузить голосовое».'; return; } clearInterval(tick); stream.getTracks().forEach((t) => t.stop()); recorder = null; btn.classList.remove('rec'); btn.textContent = '🎙 Записать голосом';
     enqueue(it, card, [[new Blob(parts, { type: type.split(';')[0] || 'audio/webm' }), 'audio']]); };
@@ -556,7 +574,7 @@ function wireAttach(card, it) {
       if (k) ok.push([f, k]); else $('.astatus', card).textContent = 'Можно прикрепить только картинку или аудио.'; }
     if (ok.length) enqueue(it, card, ok);
   };
-  drop.querySelectorAll('input[type=file]').forEach((inp) => inp.addEventListener('change', () => { take([...inp.files]); inp.value = ''; }));
+  drop.querySelectorAll('input[type=file]').forEach((inp) => inp.addEventListener('change', () => { D('file picked', [...inp.files].map((f) => f.name + ' ' + f.type + ' ' + f.size).join('; ')); take([...inp.files]); inp.value = ''; }));
   const mic = $('button.micbtn', card); if (mic) mic.addEventListener('click', (e) => toggleRecord(it, card, e.currentTarget));
   for (const ev of ['dragenter', 'dragover']) card.addEventListener(ev, (e) => { if (e.dataTransfer?.types?.includes('Files')) { e.preventDefault(); drop.classList.add('over'); } });
   card.addEventListener('dragleave', (e) => { if (!card.contains(e.relatedTarget)) drop.classList.remove('over'); });
