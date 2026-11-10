@@ -140,7 +140,8 @@ window.REVIEW_BACKEND = async function () {
     for (let t = 0; t < 3; t++) {
       try {
         // text/plain keeps it a "simple" request (no CORS preflight), which Apps Script web apps accept
-        const r = await fetch(C.url, { method: 'POST', body: JSON.stringify({ ...body, k: C.key, month: C.month }) });
+        const payload = JSON.stringify({ ...body, k: C.key, month: C.month });
+        const r = await fetch(C.url, { method: 'POST', body: payload, keepalive: payload.length < 60000 });
         const j = await r.json();
         if (!j.ok) throw new Error(j.error || 'error');
         return j;
@@ -321,6 +322,10 @@ function wire(card, it) {
 
 let writing = Promise.resolve(); const dirty = new Set(), failed = new Set(); let pendingCount = 0;
 // leaving with unsaved or still-saving comments: the browser asks first
+function flushUnsaved() { document.querySelectorAll('.card').forEach((card) => { const id = card.id.slice(2), ta = $('textarea', card);
+  if (ta && dirty.has(id) && db && me) save(id, { note: ta.value }, card); }); }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushUnsaved(); });
+window.addEventListener('pagehide', flushUnsaved);
 window.addEventListener('beforeunload', (e) => { if (pendingCount > 0 || dirty.size) { e.preventDefault(); e.returnValue = ''; } });
 function save(id, patch, card) {
   if (!db || !me) return;
@@ -345,7 +350,7 @@ function save(id, patch, card) {
 
 async function renderOthers() {
   const byPiece = {};
-  for (const r of Object.values(reviews)) if (r.uid !== me && (r.decision || r.note || r.history)) (byPiece[r.piece] ||= []).push(r);
+  for (const r of Object.values(reviews)) if (r.uid !== me && (r.decision || r.note || r.history)) (byPiece[r.piece] = byPiece[r.piece] || []).push(r);
   const ids = [...new Set(Object.values(byPiece).flat().map((r) => r.uid))];
   let ps = {};
   try { ps = ids.length && user ? await user.profiles(ids) : {}; } catch (e) { ps = {}; }
@@ -464,7 +469,7 @@ async function addAttachment(it, card, blob, kind, name) {
 // any number of files at once: one upload at a time, in the order picked, so numbers follow that order and writes aren't throttled
 const queues = {};
 function enqueue(it, card, files) {
-  const q = (queues[it.id] ||= { chain: Promise.resolve(), total: 0, done: 0 });
+  const q = queues[it.id] = queues[it.id] || { chain: Promise.resolve(), total: 0, done: 0 };
   q.total += files.length;
   for (const [f, k] of files) q.chain = q.chain.then(async () => {
     card.dataset.q = q.total > 1 ? `${q.done + 1} из ${q.total} · ` : '';
@@ -530,14 +535,14 @@ async function toggleRecord(it, card, btn) {
     try { inp.click(); } catch (_) { /* the user taps it again */ }
     st.textContent = 'Открываю запись на телефоне. Если запись не открылась — нажмите «🎙 Записать голосом» ещё раз.'; return;
   }
-  const type = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/ogg;codecs=opus'].find((t) => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || '';
+  const type = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus'].find((t) => window.MediaRecorder && MediaRecorder.isTypeSupported(t)) || '';
   const parts = []; const t0 = Date.now();
   recorder = new MediaRecorder(stream, type ? { mimeType: type, audioBitsPerSecond: 32000 } : undefined);
   recorder.ondataavailable = (e) => e.data.size && parts.push(e.data);
   const tick = setInterval(() => { const s = Math.round((Date.now() - t0) / 1000); btn.textContent = `⏹ Остановить ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; if (s >= 300) recorder.stop(); }, 500);
   recorder.onstop = () => { clearInterval(tick); stream.getTracks().forEach((t) => t.stop()); recorder = null; btn.classList.remove('rec'); btn.textContent = '🎙 Записать голосом';
     enqueue(it, card, [[new Blob(parts, { type: type.split(';')[0] || 'audio/webm' }), 'audio']]); };
-  recorder.start(1000); btn.classList.add('rec'); btn.textContent = '⏹ Остановить 0:00';
+  recorder.start();   // one blob at stop (iOS Safari mp4 fragments from time-slicing are unreliable) btn.classList.add('rec'); btn.textContent = '⏹ Остановить 0:00';
 }
 function wireAttach(card, it) {
   const drop = $('.drop', card); if (!drop) return;
