@@ -462,7 +462,8 @@ async function addAttachment(it, card, blob, kind, name) {
   } catch (e) {
     st.textContent = /full|quota|limit|exhaust|too many/i.test(String(e && (e.message || e.code)))
       ? 'Хранилище этой страницы заполнено — напишите Нур, мы освободим место (текстовые комментарии работают).'
-      : window.REVIEW_BACKEND ? 'Не сохранилось — проверьте интернет и попробуйте ещё раз.' : 'Не сохранилось — проверьте интернет и вход в Claude и попробуйте ещё раз.';
+      : (window.REVIEW_BACKEND ? '❌ Не сохранилось — проверьте интернет и попробуйте ещё раз.' : '❌ Не сохранилось — проверьте интернет и вход в Claude и попробуйте ещё раз.')
+        + ` (${String((e && (e.name + ': ' + (e.message || e.code))) || e).slice(0, 120)})`;
     throw e;
   }
 }
@@ -540,9 +541,12 @@ async function toggleRecord(it, card, btn) {
   recorder = new MediaRecorder(stream, type ? { mimeType: type, audioBitsPerSecond: 32000 } : undefined);
   recorder.ondataavailable = (e) => e.data.size && parts.push(e.data);
   const tick = setInterval(() => { const s = Math.round((Date.now() - t0) / 1000); btn.textContent = `⏹ Остановить ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; if (s >= 300) recorder.stop(); }, 500);
-  recorder.onstop = () => { clearInterval(tick); stream.getTracks().forEach((t) => t.stop()); recorder = null; btn.classList.remove('rec'); btn.textContent = '🎙 Записать голосом';
+  recorder.onerror = (ev) => { st.textContent = '❌ Запись не удалась: ' + String(ev.error && (ev.error.name + ' ' + ev.error.message) || 'ошибка'); };
+  recorder.onstop = () => {
+    if (!parts.length || !parts.reduce((n, p) => n + p.size, 0)) { clearInterval(tick); stream.getTracks().forEach((t) => t.stop()); recorder = null; btn.classList.remove('rec'); btn.textContent = '🎙 Записать голосом';
+      st.textContent = '❌ Запись пустая — браузер не записал звук. Попробуйте ещё раз или «🎧 Загрузить голосовое».'; return; } clearInterval(tick); stream.getTracks().forEach((t) => t.stop()); recorder = null; btn.classList.remove('rec'); btn.textContent = '🎙 Записать голосом';
     enqueue(it, card, [[new Blob(parts, { type: type.split(';')[0] || 'audio/webm' }), 'audio']]); };
-  recorder.start();   // one blob at stop (iOS Safari mp4 fragments from time-slicing are unreliable) btn.classList.add('rec'); btn.textContent = '⏹ Остановить 0:00';
+  recorder.start();   /* one blob at stop (iOS Safari mp4 fragments from time-slicing are unreliable) */ btn.classList.add('rec'); btn.textContent = '⏹ Остановить 0:00';
 }
 function wireAttach(card, it) {
   const drop = $('.drop', card); if (!drop) return;
