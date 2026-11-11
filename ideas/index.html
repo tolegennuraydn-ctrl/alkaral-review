@@ -40,6 +40,7 @@
 </style></head>
 <body>
 <header><h1>AL KARAL · Идеи и задания для ИИ-отдела</h1>
+<p style="margin:8px 0 0"><a data-home href="../" style="color:#fff;font-weight:700">← На главную</a> · <a data-home href="../review/" style="color:#fff;font-weight:700">✅ Проверка контента</a> · <a data-home href="../plan/" style="color:#fff;font-weight:700">📋 Контент-план</a></p>
 <p>Слева — ссылки на Instagram для контент-плана следующего месяца. Справа — задание (промпт) для ИИ: в план следующего месяца или как можно скорее.</p></header>
 <main>
 <div class="grid">
@@ -86,10 +87,11 @@
 
 <h3>Ваши отправленные идеи и задания</h3>
 <div id="list"><div class="item">Загружаю…</div></div>
-<div class="ver">версия 10.11 23:37 UTC</div>
+<div class="ver">версия 11.11 00:34 UTC</div>
 </main>
 <script>
 window.IDEAS_CONFIG = {"url": "https://script.google.com/macros/s/AKfycbwmMn17LDiwZiK8vuKw0-dK31qMaHZMPuVUeZmpHPs5uyN93RpO70BWAiLC73AjNSoi/exec", "key": "kQaPtJ1RzwtuC3WOKsfUKa0L"};
+document.querySelectorAll('[data-home]').forEach((a) => { a.href += location.search; });
 (() => {
   const C = window.IDEAS_CONFIG, BUCKET = '0000-00';
   const MONTHS = ['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];

@@ -100,6 +100,13 @@
   .others .d-approve { color:var(--ok); font-weight:700; } .others .d-revise { color:var(--rev); font-weight:700; } .others .d-reject { color:var(--rej); font-weight:700; }
   footer { position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid var(--line); padding:12px 20px; display:flex; gap:14px; align-items:center; justify-content:center; flex-wrap:wrap; z-index:10; }
   footer button { font:inherit; font-weight:800; font-size:15px; background:var(--g); color:#fff; border:0; border-radius:12px; padding:12px 22px; cursor:pointer; }
+  /* phones (test 11 Nov, iPhone 13 size): sticky header 162 px + footer 128 px left too little room and covered «Сохранить» */
+  html { scroll-padding-top:12px; scroll-padding-bottom:110px; }
+  @media (max-width:760px) {
+    header { position:static; padding:12px 16px; } header h1 { font-size:16px; }
+    footer { padding:8px 12px; gap:6px; } footer .ver, footer .fs { display:none; } footer button { padding:10px 18px; }
+    main { padding-bottom:90px; }
+  }
   footer button:disabled { opacity:.5; cursor:not-allowed; }
   footer .fs { font-size:13px; color:#46503f; }
 
@@ -114,10 +121,10 @@
 <header>
   <h1>AL KARAL · Ноябрь 2026 · Проверка контента</h1>
   <span class="who" id="who"></span>
-  <a href="../plan/" data-qs style="color:inherit;font-weight:700;margin-right:12px">📋 Контент-план</a><a href="../ideas/" data-qs style="color:inherit;font-weight:700;margin-right:12px">💡 Идеи и задания</a><span class="prog" id="prog">Загрузка…</span>
+  <span class="prog" id="prog">Загрузка…</span>
 </header>
 <nav class="mnav" style="background:#fff;border-bottom:1px solid #DCE3D3;padding:8px 20px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:14px">
-<a href="../review/" data-qs style="color:#1F4A1D;font-weight:700;margin-right:6px;text-decoration:none">← Все месяцы</a><span id="mnavList"></span></nav>
+<a href="../review/" data-qs style="color:#1F4A1D;font-weight:700;margin-right:6px;text-decoration:none">← Все месяцы</a><span id="mnavList"></span><span style="margin-left:auto;display:flex;gap:12px;flex-wrap:wrap"><a href="../plan/" data-qs style="color:#1F4A1D;font-weight:700">📋 Контент-план</a><a href="../ideas/" data-qs style="color:#1F4A1D;font-weight:700">💡 Идеи и задания</a></span></nav>
 <script>(()=>{const qs=location.search, cur="2026-11";
 document.querySelectorAll('[data-qs]').forEach(a=>{a.href+=qs});
 fetch("../months.json"+'?t='+Date.now()).then(r=>r.json()).then(j=>{document.getElementById('mnavList').innerHTML=(j["review"]||[]).map(x=>
@@ -130,11 +137,11 @@ x.m===cur?`<b style="background:#2F6A2B;color:#fff;border-radius:999px;padding:5
 <main id="list"></main>
 <div class="lb" id="lb" role="dialog" aria-label="Скриншот"><img alt=""><button type="button">Закрыть ✕</button></div>
 <footer>
-  <span class="fs" style="opacity:.55">версия 10.11 23:37 UTC</span>
+  <span class="fs" style="opacity:.55">версия 11.11 00:39 UTC</span>
   <span class="fs" id="fs"></span>
   <button id="done" disabled>Готово — отправить решения</button>
 </footer>
-<script>window.REVIEW_CONFIG = {"url": "https://script.google.com/macros/s/AKfycbwmMn17LDiwZiK8vuKw0-dK31qMaHZMPuVUeZmpHPs5uyN93RpO70BWAiLC73AjNSoi/exec", "key": "kQaPtJ1RzwtuC3WOKsfUKa0L", "month": "2026-11"}; window.REVIEW_VERSION = "10.11 23:37 UTC";</script>
+<script>window.REVIEW_CONFIG = {"url": "https://script.google.com/macros/s/AKfycbwmMn17LDiwZiK8vuKw0-dK31qMaHZMPuVUeZmpHPs5uyN93RpO70BWAiLC73AjNSoi/exec", "key": "kQaPtJ1RzwtuC3WOKsfUKa0L", "month": "2026-11"}; window.REVIEW_VERSION = "11.11 00:39 UTC";</script>
 <script>
 // Own-site backend for the review page (Nur, 9 Nov 2026: one-tap voice notes on every phone — the claude.ai frame blocks the microphone).
 // Gives the page the same small db/user interface it uses on Claude, backed by a Google Apps Script web app (apps_script/Code.gs):
