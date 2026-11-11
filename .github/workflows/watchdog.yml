@@ -1,0 +1,39 @@
+# Independent watchdog for the AL KARAL AI marketing department.
+# The daily run (08:37 Almaty) writes health.json into this site. If it is older than 26 hours, or says ok=false,
+# this workflow opens an issue (the repository owner gets GitHub's e-mail) — it works even when the Claude session is down.
+name: watchdog
+on:
+  schedule:
+    - cron: "40 5 * * *"   # 10:40 Almaty, two hours after the daily run
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+jobs:
+  heartbeat:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the heartbeat
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import json, datetime as dt, subprocess, sys
+          try:
+              h = json.load(open("health.json"))
+              age = (dt.datetime.now(dt.timezone.utc) - dt.datetime.fromisoformat(h["at"])).total_seconds() / 3600
+              problem = None if (age <= 26 and h.get("ok")) else (f"last daily run was {age:.0f} hours ago" if age > 26 else "the daily health check reported a failure")
+          except Exception as e:
+              problem = f"health.json cannot be read ({e})"
+          if not problem:
+              print("heartbeat ok"); sys.exit(0)
+          title = "AL KARAL AI department: daily run needs attention"
+          open_issues = subprocess.run(["gh", "issue", "list", "--state", "open", "--search", title, "--json", "number"], capture_output=True, text=True).stdout
+          body = f"{problem}. Open the Claude session of the AI marketing department and ask it to run the daily check; it will report what is wrong."
+          if json.loads(open_issues or "[]"):
+              subprocess.run(["gh", "issue", "comment", str(json.loads(open_issues)[0]["number"]), "--body", body])
+          else:
+              subprocess.run(["gh", "issue", "create", "--title", title, "--body", body])
+          sys.exit(1)
+          PY
