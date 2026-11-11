@@ -78,7 +78,7 @@
     <label>Когда сделать</label>
     <div class="choice">
       <label><input type="radio" name="when" value="next_month" checked><span>1 — В контент-план следующего месяца<small>войдёт в план <b class="nm"></b></small></span></label>
-      <label><input type="radio" name="when" value="asap"><span>2 — Как можно скорее<small>берём в работу в течение часа (08:00–23:00 по Алматы); готовый вариант появится на странице проверки контента</small></span></label>
+      <label><input type="radio" name="when" value="asap"><span>2 — Как можно скорее<small>берём в работу в тот же день (проверяем каждое утро); готовый вариант появится на странице проверки контента</small></span></label>
     </div>
     <div class="row" style="margin-top:14px"><button class="btn" type="submit">Отправить задание</button></div>
     <div class="msg" aria-live="polite"></div>
@@ -87,7 +87,7 @@
 
 <h3>Ваши отправленные идеи и задания</h3>
 <div id="list"><div class="item">Загружаю…</div></div>
-<div class="ver">версия 11.11 01:26 UTC</div>
+<div class="ver">версия 11.11 04:05 UTC</div>
 </main>
 <script>
 window.IDEAS_CONFIG = {"url": "https://script.google.com/macros/s/AKfycbwmMn17LDiwZiK8vuKw0-dK31qMaHZMPuVUeZmpHPs5uyN93RpO70BWAiLC73AjNSoi/exec", "key": "kQaPtJ1RzwtuC3WOKsfUKa0L"};
@@ -170,7 +170,7 @@ document.querySelectorAll('[data-home]').forEach((a) => { a.href += location.sea
       const doc = { ...data, id, uid, who: name, files: att, created: new Date().toISOString() };
       await call({ op: 'set', path: 'submissions/' + id, data: doc });
       msg.className = 'msg ok';
-      msg.textContent = data.when === 'asap' ? `Отправлено ✓ ${new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })} — берём в работу в течение часа, готовый вариант появится на странице проверки.`
+      msg.textContent = data.when === 'asap' ? `Отправлено ✓ ${new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })} — возьмём в работу при утренней проверке, готовый вариант появится на странице проверки.`
         : `Отправлено ✓ ${new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })} — войдёт в контент-план (${lbl(data.for_month)}).`;
       form.reset(); voice[vkey] = null; form.querySelectorAll('.recinfo').forEach((e) => { e.textContent = ''; });
       form.querySelectorAll('[data-rec]').forEach((e) => { e.textContent = '🎙 Записать голосовое'; });
@@ -195,7 +195,7 @@ document.querySelectorAll('[data-home]').forEach((a) => { a.href += location.sea
     const items = docs.filter((d) => d.path.startsWith('submissions/idea-')).map((d) => d.data).sort((a, b) => (b.created || '').localeCompare(a.created || ''));
     document.getElementById('list').innerHTML = items.length ? items.map((it) => {
       const s = st[it.id], when = it.when === 'asap' ? 'как можно скорее' : 'план: ' + lbl(it.for_month || next[0]);
-      const status = s ? esc(s.text) + (s.link ? ` · <a href="${esc(s.link)}">открыть</a>` : '') : (it.when === 'asap' ? '⏳ Принято — берём в работу в течение часа' : '⏳ Принято');
+      const status = s ? esc(s.text) + (s.link ? ` · <a href="${esc(s.link)}">открыть</a>` : '') : (it.when === 'asap' ? '⏳ Принято — возьмём в работу при утренней проверке' : '⏳ Принято');
       return `<div class="item"><div class="top"><span>${it.kind === 'reference' ? '📎 Референс' : '✨ Задание · ' + esc(it.format)} · ${when}</span>
         <span>${esc(it.who)} · ${esc((it.created || '').slice(0, 16).replace('T', ' '))}</span></div>
         ${it.link ? `<a href="${esc(it.link)}" target="_blank" rel="noopener">${esc(it.link)}</a>` : ''}
