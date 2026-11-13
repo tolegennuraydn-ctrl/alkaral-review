@@ -17,17 +17,25 @@ textarea{width:100%;min-height:110px;font:inherit;font-size:14px;border:1px soli
 // Personal access for every client page (12 Nov 2026). The link a person gets carries their token once (…?t=<token>&r=<id>&name=<Name>).
 // It is kept on this device, taken out of the address bar (so it is not shared with a copied link or a screenshot) and sent with
 // every request as `t`. The web app decides who the writer is from the token alone. No token → the page is view-only.
+// The token arrives as …?t=<token> (personal link) or …#t=<token> (from the entry page where a client types their code — the part
+// after # is never sent to a server). It is kept per client (window.REVIEW_CLIENT), because several clients' sites can share one
+// web address and one browser: one client's login must never be offered to another client's pages.
 (function () {
   var store = { get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
                 set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) { /* private mode: token lives for this tab */ } } };
-  var q = new URLSearchParams(location.search), t = q.get('t');
+  var KEY = window.REVIEW_CLIENT ? 'review_token:' + window.REVIEW_CLIENT : 'review_token';
+  var q = new URLSearchParams(location.search), t = q.get('t'), hash = location.hash || '';
+  var h = /(^#|&)t=([^&]*)/.exec(hash);
+  if (!t && h) { try { t = decodeURIComponent(h[2]); } catch (e) { t = ''; } }
+  if (h) hash = hash.replace(/(^#|&)t=[^&]*/, '$1').replace(/^#&/, '#').replace(/^#$/, '');
   if (t) {
-    store.set('review_token', t);
+    store.set(KEY, t);
     q.delete('t');
     var rest = q.toString();
-    try { history.replaceState(null, '', location.pathname + (rest ? '?' + rest : '') + location.hash); } catch (e) { /* keep going */ }
+    try { history.replaceState(null, '', location.pathname + (rest ? '?' + rest : '') + hash); } catch (e) { /* keep going */ }
   }
-  window.REVIEW_TOKEN = t || store.get('review_token') || '';
+  // a client whose people logged in before logins were kept per client (window.REVIEW_LEGACY_TOKEN) keeps working without a new link
+  window.REVIEW_TOKEN = t || store.get(KEY) || (window.REVIEW_LEGACY_TOKEN && KEY !== 'review_token' ? store.get('review_token') : '') || '';
   if (!window.REVIEW_TOKEN) {
     document.addEventListener('DOMContentLoaded', function () {
       if (window.REVIEW_NO_BANNER) return;   // the review page shows its own view-only notice
@@ -49,7 +57,7 @@ textarea{width:100%;min-height:110px;font:inherit;font-size:14px;border:1px soli
 <div class="ai" id="for-claude"><b>Инструкция для Claude in Chrome (English):</b> Schedule every post on this page that is not yet marked scheduled.
 For each day: download its file(s) with the buttons; in Meta Business Suite (business.facebook.com) create a Reel (videos) or a post
 (images; several images = carousel), upload the file(s), paste the caption exactly as shown (use «Скопировать текст»), choose Schedule
-for the date and time shown (Asia/Almaty, UTC+5), and confirm. Then in TikTok Studio (tiktok.com/tiktokstudio/upload) do the same
+for the date and time shown (Asia/Almaty), and confirm. Then in TikTok Studio (tiktok.com/tiktokstudio/upload) do the same
 (images → photo post), schedule for the same date and time. Never publish immediately, never change the caption, never add music
 (videos already have it). After each platform is scheduled, click the matching «✅ … запланировано» button on this page — that is how
 the team tracks it. Skip anything already marked. Never schedule a card marked «⏸ Снято с публикации»; if such a card says it is already
@@ -71,16 +79,17 @@ RU: AL KARAL — не гормон и не химия, а натуральная
     <button type="button" data-p="tiktok" data-s="posted">TikTok: опубликовано</button>
     <span class="ms"></span>
   </div>
-  <div class="st">instagram: planned · tiktok: planned · youtube: waiting_login</div>
+  <div class="st">instagram: scheduled · tiktok: scheduled · youtube: waiting_login</div>
 </section><section class="card">
-  <div class="when"><b>Пт 13.11</b> · 20:00 (Алматы) · №6 · Reel · brand_film</div>
-  <h3>Бұл канистрдің ішінде не бар?</h3>
-  <div class="files"><a class="dl" href="2026-11-13-2026-11-13.mp4" download>Видео (с музыкой) ⬇</a></div>
-  <textarea readonly>Бұл канистрдің ішінде — Қазақстан жерінің байлығы. AL KARAL шикізаты — қазақстандық леонардит: қоңыр көмірдің жоғарғы қабаты, гумин заттарына бай мол табиғи қор. Біз оны Алматыдағы өз зауытымызда, өз технологиямызбен табиғи жем қоспасына айналдырамыз. Шикізаттан жапсырмаға дейін — бәрі қазақстандық. Халал, ISO 9001:2015. AL KARAL — from nature to nature. Жазылыңыз: малыңыздың денсаулығы туралы пайдалы видеолар жалғасады.
+  <div class="when"><b>Пт 13.11</b> · 20:00 (Алматы) · №3 · Carousel</div>
+  <h3>Бұзаулардың салмақ қосуы +40%-ға дейін. Қалай?</h3>
+  <div class="files"><a class="dl" href="2026-11-13-2026-11-10-1.jpg" download>Слайд 1 ⬇</a><a class="dl" href="2026-11-13-2026-11-10-2.jpg" download>Слайд 2 ⬇</a><a class="dl" href="2026-11-13-2026-11-10-3.jpg" download>Слайд 3 ⬇</a><a class="dl" href="2026-11-13-2026-11-10-4.jpg" download>Слайд 4 ⬇</a><a class="dl" href="2026-11-13-2026-11-10-5.jpg" download>Слайд 5 ⬇</a><a class="dl" href="2026-11-13-2026-11-10-6.jpg" download>Слайд 6 ⬇</a><a class="dl" href="2026-11-13-2026-11-10-7.jpg" download>Слайд 7 ⬇</a><a class="dl" href="2026-11-13-2026-11-10-8.jpg" download>Слайд 8 ⬇</a></div>
+  <textarea readonly>Мал салмағы неге байланысты? Үш нәрсеге: рационға, күтім жағдайына және малдың бастапқы күйіне. Жем жақсы болса да, ас қорыту бұзылса, жем толық сіңбейді — ақшаңыз астауда қалады. Сондықтан салмақтың кілті — ас қорыту: ол қалпына келсе, мал жақсы жейді, жем жақсы сіңеді. AL KARAL осыған көмектеседі: 65% фульвоқышқыл мен 35% гумин қышқылы. «Төл Бесігі» шаруашылығында (Алматы облысы) бұзаулардың тәуліктік салмақ қосуы 40%-ға дейін өсті*. Сақтап қойыңыз. Kaspi-де 4 канистрден бастап жиынтықтар — сілтеме профильде. WhatsApp: +7 777 645 33 75
+*Нәтиже рационға, күтім жағдайына және малдың бастапқы күйіне байланысты
 
-RU: От сырья до этикетки — всё казахстанское. Подписывайтесь.
+RU: Привес телят до +40%* в «Төл Бесігі» (Алматинская обл.). Ссылка на Kaspi — в профиле.
 
-#AlKaral #фромнейчетунейчер #қазақстандықөнім #жемқоспасы #малшаруашылығы</textarea>
+#AlKaral #бұзау #бордақылау #жемқоспасы #фермер</textarea>
   <button type="button" class="copy">Скопировать текст</button>
   <div class="marks" data-date="2026-11-13">
     <button type="button" data-p="instagram" data-s="scheduled">✅ Instagram: запланировано</button>
@@ -89,17 +98,16 @@ RU: От сырья до этикетки — всё казахстанское.
     <button type="button" data-p="tiktok" data-s="posted">TikTok: опубликовано</button>
     <span class="ms"></span>
   </div>
-  <div class="st">instagram: planned · tiktok: planned · youtube: waiting_login</div>
+  <div class="st">instagram: scheduled · tiktok: scheduled · youtube: waiting_login</div>
 </section><section class="card">
-  <div class="when"><b>Сб 14.11</b> · 19:30 (Алматы) · №3 · Carousel</div>
-  <h3>Бұзаулардың салмақ қосуы +40%-ға дейін. Қалай?</h3>
-  <div class="files"><a class="dl" href="2026-11-14-2026-11-10-1.jpg" download>Слайд 1 ⬇</a><a class="dl" href="2026-11-14-2026-11-10-2.jpg" download>Слайд 2 ⬇</a><a class="dl" href="2026-11-14-2026-11-10-3.jpg" download>Слайд 3 ⬇</a><a class="dl" href="2026-11-14-2026-11-10-4.jpg" download>Слайд 4 ⬇</a><a class="dl" href="2026-11-14-2026-11-10-5.jpg" download>Слайд 5 ⬇</a><a class="dl" href="2026-11-14-2026-11-10-6.jpg" download>Слайд 6 ⬇</a><a class="dl" href="2026-11-14-2026-11-10-7.jpg" download>Слайд 7 ⬇</a><a class="dl" href="2026-11-14-2026-11-10-8.jpg" download>Слайд 8 ⬇</a></div>
-  <textarea readonly>Мал салмағы неге байланысты? Үш нәрсеге: рационға, күтім жағдайына және малдың бастапқы күйіне. Жем жақсы болса да, ас қорыту бұзылса, жем толық сіңбейді — ақшаңыз астауда қалады. Сондықтан салмақтың кілті — ас қорыту: ол қалпына келсе, мал жақсы жейді, жем жақсы сіңеді. AL KARAL осыған көмектеседі: 65% фульвоқышқыл мен 35% гумин қышқылы. «Төл Бесігі» шаруашылығында (Алматы облысы) бұзаулардың тәуліктік салмақ қосуы 40%-ға дейін өсті*. Сақтап қойыңыз. Kaspi-де 4 канистрден бастап жиынтықтар — сілтеме профильде. WhatsApp: +7 777 645 33 75
-*Нәтиже рационға, күтім жағдайына және малдың бастапқы күйіне байланысты
+  <div class="when"><b>Сб 14.11</b> · 19:30 (Алматы) · №6 · Reel · brand_film</div>
+  <h3>Бұл канистрдің ішінде не бар?</h3>
+  <div class="files"><a class="dl" href="2026-11-14-2026-11-13.mp4" download>Видео (с музыкой) ⬇</a></div>
+  <textarea readonly>Бұл канистрдің ішінде — Қазақстан жерінің байлығы. AL KARAL шикізаты — қазақстандық леонардит: қоңыр көмірдің жоғарғы қабаты, гумин заттарына бай мол табиғи қор. Біз оны Алматыдағы өз зауытымызда, өз технологиямызбен табиғи жем қоспасына айналдырамыз. Шикізаттан жапсырмаға дейін — бәрі қазақстандық. Халал, ISO 9001:2015. AL KARAL — from nature to nature. Жазылыңыз: малыңыздың денсаулығы туралы пайдалы видеолар жалғасады.
 
-RU: Привес телят до +40%* в «Төл Бесігі» (Алматинская обл.). Ссылка на Kaspi — в профиле.
+RU: От сырья до этикетки — всё казахстанское. Подписывайтесь.
 
-#AlKaral #бұзау #бордақылау #жемқоспасы #фермер</textarea>
+#AlKaral #фромнейчетунейчер #қазақстандықөнім #жемқоспасы #малшаруашылығы</textarea>
   <button type="button" class="copy">Скопировать текст</button>
   <div class="marks" data-date="2026-11-14">
     <button type="button" data-p="instagram" data-s="scheduled">✅ Instagram: запланировано</button>
@@ -108,16 +116,16 @@ RU: Привес телят до +40%* в «Төл Бесігі» (Алмати�
     <button type="button" data-p="tiktok" data-s="posted">TikTok: опубликовано</button>
     <span class="ms"></span>
   </div>
-  <div class="st">instagram: planned · tiktok: planned · youtube: waiting_login</div>
+  <div class="st">instagram: scheduled · tiktok: scheduled · youtube: waiting_login</div>
 </section><section class="card">
-  <div class="when"><b>Вс 15.11</b> · 13:00 (Алматы) · №2 · Reel · voiceover_footage</div>
-  <h3>Бұқалар жем жемей тұр ма?</h3>
-  <div class="files"><a class="dl" href="2026-11-15-2026-11-09.mp4" download>Видео (с музыкой) ⬇</a></div>
-  <textarea readonly>Бұқалар жем жемей тұр ма? Мал нашар жесе, бордақылау тоқтайды, ал шығын азаймайды. AL KARAL — гумин және фульвоқышқылдар негізіндегі табиғи жем қоспасы: ✓ ас қорытуды қалпына келтіреді ✓ тәбетті қайтаруға көмектеседі ✓ жемнің жақсы сіңуіне көмектеседі. Күніне 1 рет жемге немесе суға қосылады. «Қоңыр Тұяқ» (Алматы облысы) шаруашылығында малдың жем жеуі артты. Халал, ҚР АШМ ветпрепараттар тізілімінде. Неше бас малыңыз бар екенін WhatsApp-қа жазыңыз: +7 777 645 33 75 — тегін есептеп береміз.
+  <div class="when"><b>Вс 15.11</b> · 13:00 (Алматы) · №5 · Static</div>
+  <h3>Мықты ас қорыту — жылқыңыздың күші</h3>
+  <div class="files"><a class="dl" href="2026-11-15-2026-11-12-1.jpg" download>Картинка ⬇</a></div>
+  <textarea readonly>Жылқыңыздың күші — сау асқазанда. AL KARAL — қазақстандық леонардиттен жасалған табиғи жем қоспасы: ✓ тәбет пен ас қорытуды қолдайды ✓ жүн жамылғысын жақсартады ✓ бәйге жылқыларының төзімділігін қолдайды. Күніне 1 рет жемге немесе суға қосылады. 450 кг жылқыға күніне шамамен 270 ₸ (нұсқаулық бойынша есеп). Халал, ҚР АШМ ветпрепараттар тізілімінде. Kaspi-де 4 канистрден бастап жиынтықпен тапсырыс беріңіз: үйге дейін тегін жеткізу, 3–12 айға бөліп төлеу. Сілтеме — профильде. WhatsApp: +7 777 645 33 75
 
-RU: Бычки стали хуже есть? Напишите в WhatsApp, сколько у вас голов, — посчитаем бесплатно.
+RU: Сильный ЖКТ — здоровая шерсть и выносливость вашей лошади. Ссылка на Kaspi — в профиле.
 
-#AlKaral #бордақылау #жемқоспасы #откорм #фермер</textarea>
+#AlKaral #жылқы #бәйге #жылқышаруашылығы #жемқоспасы</textarea>
   <button type="button" class="copy">Скопировать текст</button>
   <div class="marks" data-date="2026-11-15">
     <button type="button" data-p="instagram" data-s="scheduled">✅ Instagram: запланировано</button>
@@ -126,16 +134,16 @@ RU: Бычки стали хуже есть? Напишите в WhatsApp, ск�
     <button type="button" data-p="tiktok" data-s="posted">TikTok: опубликовано</button>
     <span class="ms"></span>
   </div>
-  <div class="st">instagram: planned · tiktok: planned · youtube: waiting_login</div>
+  <div class="st">instagram: scheduled · tiktok: scheduled · youtube: waiting_login</div>
 </section><section class="card">
-  <div class="when"><b>Пн 16.11</b> · 20:00 (Алматы) · №5 · Static</div>
-  <h3>Мықты ас қорыту — жылқыңыздың күші</h3>
-  <div class="files"><a class="dl" href="2026-11-16-2026-11-12-1.jpg" download>Картинка ⬇</a></div>
-  <textarea readonly>Жылқыңыздың күші — сау асқазанда. AL KARAL — қазақстандық леонардиттен жасалған табиғи жем қоспасы: ✓ тәбет пен ас қорытуды қолдайды ✓ жүн жамылғысын жақсартады ✓ бәйге жылқыларының төзімділігін қолдайды. Күніне 1 рет жемге немесе суға қосылады. 450 кг жылқыға күніне шамамен 270 ₸ (нұсқаулық бойынша есеп). Халал, ҚР АШМ ветпрепараттар тізілімінде. Kaspi-де 4 канистрден бастап жиынтықпен тапсырыс беріңіз: үйге дейін тегін жеткізу, 3–12 айға бөліп төлеу. Сілтеме — профильде. WhatsApp: +7 777 645 33 75
+  <div class="when"><b>Пн 16.11</b> · 20:00 (Алматы) · №2 · Reel · voiceover_footage</div>
+  <h3>Бұқалар жем жемей тұр ма?</h3>
+  <div class="files"><a class="dl" href="2026-11-16-2026-11-09.mp4" download>Видео (с музыкой) ⬇</a></div>
+  <textarea readonly>Бұқалар жем жемей тұр ма? Мал нашар жесе, бордақылау тоқтайды, ал шығын азаймайды. AL KARAL — гумин және фульвоқышқылдар негізіндегі табиғи жем қоспасы: ✓ ас қорытуды қалпына келтіреді ✓ тәбетті қайтаруға көмектеседі ✓ жемнің жақсы сіңуіне көмектеседі. Күніне 1 рет жемге немесе суға қосылады. «Қоңыр Тұяқ» (Алматы облысы) шаруашылығында малдың жем жеуі артты. Халал, ҚР АШМ ветпрепараттар тізілімінде. Неше бас малыңыз бар екенін WhatsApp-қа жазыңыз: +7 777 645 33 75 — тегін есептеп береміз.
 
-RU: Сильный ЖКТ — здоровая шерсть и выносливость вашей лошади. Ссылка на Kaspi — в профиле.
+RU: Бычки стали хуже есть? Напишите в WhatsApp, сколько у вас голов, — посчитаем бесплатно.
 
-#AlKaral #жылқы #бәйге #жылқышаруашылығы #жемқоспасы</textarea>
+#AlKaral #бордақылау #жемқоспасы #откорм #фермер</textarea>
   <button type="button" class="copy">Скопировать текст</button>
   <div class="marks" data-date="2026-11-16">
     <button type="button" data-p="instagram" data-s="scheduled">✅ Instagram: запланировано</button>
@@ -144,7 +152,7 @@ RU: Сильный ЖКТ — здоровая шерсть и вынослив�
     <button type="button" data-p="tiktok" data-s="posted">TikTok: опубликовано</button>
     <span class="ms"></span>
   </div>
-  <div class="st">instagram: planned · tiktok: planned · youtube: waiting_login</div>
+  <div class="st">instagram: scheduled · tiktok: scheduled · youtube: waiting_login</div>
 </section><section class="card">
   <div class="when"><b>Вт 17.11</b> · 20:00 (Алматы) · №7 · Carousel</div>
   <h3>Миф пе, шындық па? «AL KARAL — химия»</h3>
@@ -162,7 +170,7 @@ RU: AL KARAL — не химия, а природные гуминовые ве�
     <button type="button" data-p="tiktok" data-s="posted">TikTok: опубликовано</button>
     <span class="ms"></span>
   </div>
-  <div class="st">instagram: planned · tiktok: planned · youtube: waiting_login</div>
+  <div class="st">instagram: scheduled · tiktok: scheduled · youtube: waiting_login</div>
 </section><section class="card">
   <div class="when"><b>Ср 18.11</b> · 20:00 (Алматы) · №8 · Reel · before_after</div>
   <h3>Было → стало. Реальные фото · Фото из хозяйств, применявших AL KARAL</h3>
@@ -178,7 +186,7 @@ RU: AL KARAL — не химия, а природные гуминовые ве�
     <button type="button" data-p="tiktok" data-s="posted">TikTok: опубликовано</button>
     <span class="ms"></span>
   </div>
-  <div class="st">instagram: planned · tiktok: planned · youtube: waiting_login</div>
+  <div class="st">instagram: scheduled · tiktok: scheduled · youtube: waiting_login</div>
 </section><section class="card">
   <div class="when"><b>Чт 19.11</b> · 20:00 (Алматы) · №4 · Reel · farm_math</div>
   <h3>Дорого? Посчитаем на одного бычка</h3>
@@ -194,7 +202,7 @@ RU: AL KARAL — не химия, а природные гуминовые ве�
     <button type="button" data-p="tiktok" data-s="posted">TikTok: опубликовано</button>
     <span class="ms"></span>
   </div>
-  <div class="st">instagram: planned · tiktok: planned · youtube: waiting_login</div>
+  <div class="st">instagram: scheduled · tiktok: scheduled · youtube: waiting_login</div>
 </section>
 </main>
 <script>window.CFG={"url": "https://script.google.com/macros/s/AKfycbwmMn17LDiwZiK8vuKw0-dK31qMaHZMPuVUeZmpHPs5uyN93RpO70BWAiLC73AjNSoi/exec", "month": "2026-11"};

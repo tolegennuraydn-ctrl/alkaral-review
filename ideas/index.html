@@ -123,7 +123,7 @@ window.REVIEW_CLIENT='al-karal';window.REVIEW_LEGACY_TOKEN=true;
 
 <h3>Ваши отправленные идеи и задания</h3>
 <div id="list"><div class="item">Загружаю…</div></div>
-<div class="ver">версия 13.11 19:43 UTC</div>
+<div class="ver">версия 13.11 20:14 UTC</div>
 </main>
 <script>
 window.IDEAS_CONFIG = {"url": "https://script.google.com/macros/s/AKfycbwmMn17LDiwZiK8vuKw0-dK31qMaHZMPuVUeZmpHPs5uyN93RpO70BWAiLC73AjNSoi/exec"};
@@ -154,7 +154,7 @@ document.querySelectorAll('[data-home]').forEach((a) => { a.href += location.sea
     bar.querySelector('form').addEventListener('submit', (e) => { e.preventDefault(); const v = bar.querySelector('input').value.trim(); if (!v) return; name = v; ls.set('review_name', v); bar.remove(); done(); });
   });
 
-  // ---- months: next month by Almaty time (UTC+5) is the default plan month
+  // ---- months: next month by Алматы time (UTC+5) is the default plan month
   const now = new Date(Date.now() + 5 * 3600e3);
   const ym = (d) => d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0');
   const lbl = (s) => MONTHS[+s.slice(5) - 1] + ' ' + s.slice(0, 4);
