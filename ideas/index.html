@@ -38,20 +38,29 @@
   .namebar input { flex:1; min-width:180px; font:inherit; font-size:16px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; }
   .ver { font-size:11px; color:var(--mut); text-align:right; margin-top:20px; }
 </style><script>
+window.REVIEW_CLIENT='al-karal';window.REVIEW_LEGACY_TOKEN=true;
 // Personal access for every client page (12 Nov 2026). The link a person gets carries their token once (…?t=<token>&r=<id>&name=<Name>).
 // It is kept on this device, taken out of the address bar (so it is not shared with a copied link or a screenshot) and sent with
 // every request as `t`. The web app decides who the writer is from the token alone. No token → the page is view-only.
+// The token arrives as …?t=<token> (personal link) or …#t=<token> (from the entry page where a client types their code — the part
+// after # is never sent to a server). It is kept per client (window.REVIEW_CLIENT), because several clients' sites can share one
+// web address and one browser: one client's login must never be offered to another client's pages.
 (function () {
   var store = { get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
                 set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) { /* private mode: token lives for this tab */ } } };
-  var q = new URLSearchParams(location.search), t = q.get('t');
+  var KEY = window.REVIEW_CLIENT ? 'review_token:' + window.REVIEW_CLIENT : 'review_token';
+  var q = new URLSearchParams(location.search), t = q.get('t'), hash = location.hash || '';
+  var h = /(^#|&)t=([^&]*)/.exec(hash);
+  if (!t && h) { try { t = decodeURIComponent(h[2]); } catch (e) { t = ''; } }
+  if (h) hash = hash.replace(/(^#|&)t=[^&]*/, '$1').replace(/^#&/, '#').replace(/^#$/, '');
   if (t) {
-    store.set('review_token', t);
+    store.set(KEY, t);
     q.delete('t');
     var rest = q.toString();
-    try { history.replaceState(null, '', location.pathname + (rest ? '?' + rest : '') + location.hash); } catch (e) { /* keep going */ }
+    try { history.replaceState(null, '', location.pathname + (rest ? '?' + rest : '') + hash); } catch (e) { /* keep going */ }
   }
-  window.REVIEW_TOKEN = t || store.get('review_token') || '';
+  // a client whose people logged in before logins were kept per client (window.REVIEW_LEGACY_TOKEN) keeps working without a new link
+  window.REVIEW_TOKEN = t || store.get(KEY) || (window.REVIEW_LEGACY_TOKEN && KEY !== 'review_token' ? store.get('review_token') : '') || '';
   if (!window.REVIEW_TOKEN) {
     document.addEventListener('DOMContentLoaded', function () {
       if (window.REVIEW_NO_BANNER) return;   // the review page shows its own view-only notice
@@ -114,7 +123,7 @@
 
 <h3>Ваши отправленные идеи и задания</h3>
 <div id="list"><div class="item">Загружаю…</div></div>
-<div class="ver">версия 11.11 23:15 UTC</div>
+<div class="ver">версия 13.11 19:43 UTC</div>
 </main>
 <script>
 window.IDEAS_CONFIG = {"url": "https://script.google.com/macros/s/AKfycbwmMn17LDiwZiK8vuKw0-dK31qMaHZMPuVUeZmpHPs5uyN93RpO70BWAiLC73AjNSoi/exec"};

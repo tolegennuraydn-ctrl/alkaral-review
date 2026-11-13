@@ -85,6 +85,12 @@
   .hist { font-size:13px; background:#F4FAF1; border:1px solid #CFE3C4; border-radius:10px; padding:8px 12px; margin:0 0 8px; color:#46503f; }
   .hist b { color:#1F4A1D; display:block; margin-bottom:3px; }
   .hist div { white-space:pre-wrap; max-height:140px; overflow:auto; }
+  .hist .round { padding:6px 0; border-top:1px solid #CFE3C4; max-height:none; overflow:visible; }
+  .hist .round:first-of-type { border-top:0; padding-top:0; }
+  .hist .round .rtext { max-height:140px; overflow:auto; }
+  .hist .round .rfixed { white-space:normal; color:#5d6a55; margin-top:3px; max-height:none; }
+  .hist .round .rfiles { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:6px; white-space:normal; max-height:none; overflow:visible; }
+  .hist .round .rfiles:empty { display:none; }
   .saverow { display:flex; align-items:center; gap:10px; margin-top:6px; flex-wrap:wrap; }
   .savebtn { font:inherit; font-weight:700; font-size:14px; background:var(--g); color:#fff; border:0; border-radius:10px; padding:9px 16px; cursor:pointer; }
   .savebtn:disabled { opacity:.6; cursor:default; }
@@ -117,20 +123,29 @@
   .namebar button { font:inherit; font-weight:800; background:#2F6A2B; color:#fff; border:0; border-radius:10px; padding:10px 18px; cursor:pointer; }
 </style>
 <script>
+window.REVIEW_CLIENT='al-karal';window.REVIEW_LEGACY_TOKEN=true;
 // Personal access for every client page (12 Nov 2026). The link a person gets carries their token once (…?t=<token>&r=<id>&name=<Name>).
 // It is kept on this device, taken out of the address bar (so it is not shared with a copied link or a screenshot) and sent with
 // every request as `t`. The web app decides who the writer is from the token alone. No token → the page is view-only.
+// The token arrives as …?t=<token> (personal link) or …#t=<token> (from the entry page where a client types their code — the part
+// after # is never sent to a server). It is kept per client (window.REVIEW_CLIENT), because several clients' sites can share one
+// web address and one browser: one client's login must never be offered to another client's pages.
 (function () {
   var store = { get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
                 set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) { /* private mode: token lives for this tab */ } } };
-  var q = new URLSearchParams(location.search), t = q.get('t');
+  var KEY = window.REVIEW_CLIENT ? 'review_token:' + window.REVIEW_CLIENT : 'review_token';
+  var q = new URLSearchParams(location.search), t = q.get('t'), hash = location.hash || '';
+  var h = /(^#|&)t=([^&]*)/.exec(hash);
+  if (!t && h) { try { t = decodeURIComponent(h[2]); } catch (e) { t = ''; } }
+  if (h) hash = hash.replace(/(^#|&)t=[^&]*/, '$1').replace(/^#&/, '#').replace(/^#$/, '');
   if (t) {
-    store.set('review_token', t);
+    store.set(KEY, t);
     q.delete('t');
     var rest = q.toString();
-    try { history.replaceState(null, '', location.pathname + (rest ? '?' + rest : '') + location.hash); } catch (e) { /* keep going */ }
+    try { history.replaceState(null, '', location.pathname + (rest ? '?' + rest : '') + hash); } catch (e) { /* keep going */ }
   }
-  window.REVIEW_TOKEN = t || store.get('review_token') || '';
+  // a client whose people logged in before logins were kept per client (window.REVIEW_LEGACY_TOKEN) keeps working without a new link
+  window.REVIEW_TOKEN = t || store.get(KEY) || (window.REVIEW_LEGACY_TOKEN && KEY !== 'review_token' ? store.get('review_token') : '') || '';
   if (!window.REVIEW_TOKEN) {
     document.addEventListener('DOMContentLoaded', function () {
       if (window.REVIEW_NO_BANNER) return;   // the review page shows its own view-only notice
@@ -164,11 +179,11 @@ x.m===cur?`<b style="background:#2F6A2B;color:#fff;border-radius:999px;padding:5
 <main id="list"></main>
 <div class="lb" id="lb" role="dialog" aria-label="Скриншот"><img alt=""><button type="button">Закрыть ✕</button></div>
 <footer>
-  <span class="fs" style="opacity:.55">версия 11.11 23:15 UTC</span>
+  <span class="fs" style="opacity:.55">версия 13.11 19:43 UTC</span>
   <span class="fs" id="fs"></span>
   <button id="done" disabled>Готово — отправить решения</button>
 </footer>
-<script>window.REVIEW_NO_BANNER = true; window.REVIEW_CONFIG = {"url": "https://script.google.com/macros/s/AKfycbwmMn17LDiwZiK8vuKw0-dK31qMaHZMPuVUeZmpHPs5uyN93RpO70BWAiLC73AjNSoi/exec", "month": "2026-11"}; window.REVIEW_VERSION = "11.11 23:15 UTC";</script>
+<script>window.REVIEW_NO_BANNER = true; window.REVIEW_CONFIG = {"url": "https://script.google.com/macros/s/AKfycbwmMn17LDiwZiK8vuKw0-dK31qMaHZMPuVUeZmpHPs5uyN93RpO70BWAiLC73AjNSoi/exec", "month": "2026-11"}; window.REVIEW_VERSION = "13.11 19:43 UTC";</script>
 <script>
 // Own-site backend for the review page (Nur, 9 Nov 2026: one-tap voice notes on every phone — the claude.ai frame blocks the microphone).
 // Gives the page the same small db/user interface it uses on Claude, backed by a Google Apps Script web app (apps_script/Code.gs):
@@ -274,6 +289,15 @@ window.REVIEW_BACKEND = async function () {
 const D = (s, i) => { try { window.__diag && window.__diag(s, i); } catch (e) { /* diagnostics are optional */ } };
 const LABEL = { approve: 'Одобрить', revise: 'Доработать', reject: 'Отклонить' };
 const DONE = { approve: 'Одобрено', revise: 'Доработать', reject: 'Отклонено' };
+// Every earlier comment of a reviewer on a piece, oldest first (written by engine/review/site/rounds.py when a fix is delivered):
+// rounds = [{n, date, decision, note, fixed}]. Nothing is ever removed from it.
+const roundsOf = (r) => (Array.isArray(r?.rounds) ? r.rounds.filter((x) => x && Number(x.n) > 0).slice().sort((a, b) => a.n - b.n) : []);
+function roundHead(x) {
+  let when = x.date || '';
+  const t = /^\d{4}-\d{2}-\d{2}/.test(when) ? new Date(when.slice(0, 10) + 'T12:00:00') : null;
+  if (t && !isNaN(t)) when = t.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+  return 'Комментарий ' + Number(x.n) + (when ? ' · ' + when : '') + (DONE[x.decision] ? ' · ' + DONE[x.decision] : '');
+}
 let items = [], reviews = {}, me = null, db = null, user = null, filter = 'all';
 const $ = (s, el = document) => el.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -318,8 +342,9 @@ function render() {
         ${it.caption ? `<details><summary>Текст публикации (caption)</summary><pre>${esc(it.caption)}</pre></details>` : ''}
         ${it.notes ? `<details><summary>Как публиковать</summary><pre>${esc(it.notes)}</pre></details>` : ''}
         <div class="actions">${Object.keys(LABEL).map((d) => `<button data-d="${d}" class="${st === d ? 'on' : ''}" ${db ? '' : 'disabled'}>${LABEL[d]}</button>`).join('')}</div>
-        ${r?.history ? `<div class="hist"><b>Ваш прошлый комментарий${r.history_date ? ' (' + esc(r.history_date) + ')' : ''} — по нему сделана эта новая версия:</b><div>${esc(r.history)}</div></div>` : ''}
-        <textarea placeholder="${r?.history ? 'Новый комментарий к этой версии (по старому сделана эта версия). Можно ссылаться: «скриншот 1: …»' : 'Комментарий: что изменить, что нравится… Можно ссылаться: «скриншот 1: …»'}" ${db ? '' : 'disabled'}>${esc(r?.note || '')}</textarea>
+        ${roundsOf(r).length ? `<div class="hist"><b>Ваши прошлые комментарии — по ним сделана эта версия:</b>${roundsOf(r).map((x) => `<div class="round"><b>${esc(roundHead(x))}</b>${x.note ? `<div class="rtext">${esc(x.note)}</div>` : ''}${x.fixed ? `<div class="rfixed">Что исправили: ${esc(x.fixed)}</div>` : ''}<div class="rfiles" data-round="${Number(x.n)}"></div></div>`).join('')}</div>`
+          : r?.history ? `<div class="hist"><b>Ваш прошлый комментарий${r.history_date ? ' (' + esc(r.history_date) + ')' : ''} — по нему сделана эта новая версия:</b><div>${esc(r.history)}</div></div>` : ''}
+        <textarea placeholder="${r?.history || roundsOf(r).length ? 'Новый комментарий к этой версии (по старому сделана эта версия). Можно ссылаться: «скриншот 1: …»' : 'Комментарий: что изменить, что нравится… Можно ссылаться: «скриншот 1: …»'}" ${db ? '' : 'disabled'}>${esc(r?.note || '')}</textarea>
         <div class="saverow" ${db && me ? '' : 'hidden'}><button type="button" class="savebtn">💾 Сохранить</button><span class="saved"></span></div>
         <div class="att">
           <div class="drop" ${db && me ? '' : 'hidden'}>
@@ -408,7 +433,7 @@ function save(id, patch, card) {
 
 async function renderOthers() {
   const byPiece = {};
-  for (const r of Object.values(reviews)) if (r.uid !== me && (r.decision || r.note || r.history)) (byPiece[r.piece] = byPiece[r.piece] || []).push(r);
+  for (const r of Object.values(reviews)) if (r.uid !== me && (r.decision || r.note || r.history || roundsOf(r).length)) (byPiece[r.piece] = byPiece[r.piece] || []).push(r);
   const ids = [...new Set(Object.values(byPiece).flat().map((r) => r.uid))];
   let ps = {};
   try { ps = ids.length && user ? await user.profiles(ids) : {}; } catch (e) { ps = {}; }
@@ -425,7 +450,8 @@ async function renderOthers() {
       if (r.updated) { const t = new Date(r.updated); if (!isNaN(t)) h.appendChild(document.createTextNode(' · ' + t.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }))); }
       d.appendChild(h);
       if (r.note) { const n = document.createElement('div'); n.className = 'rvt'; n.textContent = r.note; d.appendChild(n); }
-      if (r.history) { const hh = document.createElement('div'); hh.className = 'rvt'; hh.style.cssText = 'margin-top:6px;color:#5d6a55;font-size:13px'; hh.textContent = `Прошлый комментарий (${r.history_date || 'ранее'}, по нему сделана новая версия): ` + r.history; d.appendChild(hh); }
+      for (const x of roundsOf(r)) { const hh = document.createElement('div'); hh.className = 'rvt'; hh.style.cssText = 'margin-top:6px;color:#5d6a55;font-size:13px'; hh.textContent = roundHead(x) + (x.note ? ': ' + x.note : ''); d.appendChild(hh); }
+      if (r.history && !roundsOf(r).length) { const hh = document.createElement('div'); hh.className = 'rvt'; hh.style.cssText = 'margin-top:6px;color:#5d6a55;font-size:13px'; hh.textContent = `Прошлый комментарий (${r.history_date || 'ранее'}, по нему сделана новая версия): ` + r.history; d.appendChild(hh); }
       box.appendChild(d);
     }
   }
@@ -566,19 +592,22 @@ let names = {};
 async function renderAttachments(piece) {
   const card = document.getElementById(`p-${piece}`); if (!card) return;
   const th = $('.thumbs', card), vo = $('.voices', card); th.innerHTML = ''; vo.innerHTML = '';
+  for (const b of card.querySelectorAll('.rfiles')) b.innerHTML = '';
+  // a file that belongs to an earlier comment (m.round) is shown with that comment and can no longer be deleted
+  const past = (m) => (m.round && m.uid === me ? $(`.rfiles[data-round="${Number(m.round)}"]`, card) : null);
   const list = Object.entries(atts).filter(([, m]) => m.piece === piece).sort((a, b) => a[1].created.localeCompare(b[1].created));
   const seen = { image: 0, audio: 0 };
   for (const [, m] of list) { seen[m.kind] = Math.max(seen[m.kind] + 1, m.num || 0); if (!m.num) m.num = seen[m.kind]; }
   for (const [id, m] of list) {
     const who = m.uid === me ? 'Вы' : (names[m.uid] || 'Проверяющий');
-    const del = m.uid === me ? `<button class="x" type="button" title="Удалить" aria-label="Удалить">✕</button>` : '';
+    const del = m.uid === me && !m.round ? `<button class="x" type="button" title="Удалить" aria-label="Удалить">✕</button>` : '';
     if (m.kind === 'image') {
-      const el = document.createElement('div'); el.className = 'thumb'; el.title = `Скриншот ${m.num} · ${who}`; el.innerHTML = `<img alt="Скриншот ${m.num}"><span class="num">${m.num}</span>${del}`; th.appendChild(el);
+      const el = document.createElement('div'); el.className = 'thumb'; el.title = `Скриншот ${m.num} · ${who}`; el.innerHTML = `<img alt="Скриншот ${m.num}"><span class="num">${m.num}</span>${del}`; (past(m) || th).appendChild(el);
       $('.x', el)?.addEventListener('click', () => removeAttachment(id, piece));
       loadBlob(id, m).then((u) => { $('img', el).src = u; }).catch(() => { el.textContent = '…'; });
       el.addEventListener('click', (e) => { if (e.target.closest('.x')) return; const u = $('img', el).src; if (u) { $('#lb img').src = u; $('#lb button').textContent = `Скриншот ${m.num} · Закрыть ✕`; $('#lb').classList.add('on'); } });
     } else {
-      const el = document.createElement('div'); el.className = 'voice'; el.innerHTML = `<span class="vnum">🎙 ${m.num}</span><audio controls preload="none"></audio><span class="by">${esc(who)}</span>${del}`; vo.appendChild(el);
+      const el = document.createElement('div'); el.className = 'voice'; el.innerHTML = `<span class="vnum">🎙 ${m.num}</span><audio controls preload="none"></audio><span class="by">${esc(who)}</span>${del}`; (past(m) || vo).appendChild(el);
       $('.x', el)?.addEventListener('click', () => removeAttachment(id, piece));
       loadBlob(id, m).then((u) => { const au = $('audio', el); au.preload = 'metadata';
         // browser recordings (webm) carry no length, so the player shows ∞ — seek to the end once to let it measure, then back
@@ -612,15 +641,30 @@ async function toggleRecord(it, card, btn) {
   } catch (e) { ac = null; }
   recorder = new MediaRecorder(stream, type ? { mimeType: type, audioBitsPerSecond: 32000 } : undefined);
   recorder.ondataavailable = (e) => e.data.size && parts.push(e.data);
+  // speech → text while she records (the browser's own recognition): the words land in the comment box, where she can correct them.
+  // Best effort: a browser without it, or one that refuses, changes nothing — the recording itself is kept and sent as before.
+  let speech = null, heard = '';
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (SR) { try { speech = new SR(); speech.lang = 'ru-RU'; speech.continuous = true; speech.interimResults = false;
+      speech.onresult = (e) => { for (let i = e.resultIndex; i < e.results.length; i++) if (e.results[i].isFinal) heard += e.results[i][0].transcript.trim() + ' '; };
+      speech.onerror = (e) => D('speech error', e.error);
+      speech.onend = () => { if (recorder && speech) { try { speech.start(); } catch (_) { /* already running */ } } };
+    } catch (e) { speech = null; D('speech unavailable', e && e.message); } }
+  const speechDone = () => { const sp = speech; speech = null; if (!sp) return; try { sp.stop(); } catch (_) { /* not started */ }
+    setTimeout(() => { const text = heard.trim(); D('speech text', text.length + ' chars'); if (!text) return;
+      const ta = $('textarea', card); if (!ta || ta.disabled) return;
+      ta.value = (ta.value.trim() ? ta.value.replace(/\s+$/, '') + '\n' : '') + '🎙 ' + text;
+      ta.dispatchEvent(new Event('input', { bubbles: true })); st.textContent = '🎙 Текст из голосового добавлен в комментарий — проверьте и поправьте, если нужно. Запись тоже сохранена.'; }, 900); };
   const tick = setInterval(() => { const s = Math.round((Date.now() - t0) / 1000); btn.textContent = `⏹ Остановить ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')} ${ac ? '▮'.repeat(Math.min(5, Math.round(level * 60))).padEnd(5, '▯') : ''}`; if (s >= 300) recorder.stop(); }, 500);
   recorder.onerror = (ev) => { st.textContent = '❌ Запись не удалась: ' + String(ev.error && (ev.error.name + ' ' + ev.error.message) || 'ошибка'); };
-  recorder.onstop = () => { try { ac && ac.close(); } catch (e) { /* ignore */ }
+  recorder.onstop = () => { try { ac && ac.close(); } catch (e) { /* ignore */ } speechDone();
     card.dataset.quiet = (ac && peak < 0.02) ? '1' : '';
     D('recorded peak', peak.toFixed(3)); D('recorded', parts.length + ' parts, ' + parts.reduce((n, p) => n + p.size, 0) + ' bytes');
     if (!parts.length || !parts.reduce((n, p) => n + p.size, 0)) { clearInterval(tick); stream.getTracks().forEach((t) => t.stop()); recorder = null; btn.classList.remove('rec'); btn.textContent = '🎙 Записать голосом';
       st.textContent = '❌ Запись пустая — браузер не записал звук. Попробуйте ещё раз или «🎧 Загрузить голосовое».'; return; } clearInterval(tick); stream.getTracks().forEach((t) => t.stop()); recorder = null; btn.classList.remove('rec'); btn.textContent = '🎙 Записать голосом';
     enqueue(it, card, [[new Blob(parts, { type: type.split(';')[0] || 'audio/webm' }), 'audio']]); };
-  recorder.start();   /* one blob at stop (iOS Safari mp4 fragments from time-slicing are unreliable) */ btn.classList.add('rec'); btn.textContent = '⏹ Остановить 0:00';
+  recorder.start();   /* one blob at stop (iOS Safari mp4 fragments from time-slicing are unreliable) */
+  if (speech) { try { speech.start(); D('speech on', speech.lang); } catch (e) { D('speech not started', e && e.message); speech = null; } } btn.classList.add('rec'); btn.textContent = '⏹ Остановить 0:00';
 }
 function wireAttach(card, it) {
   const drop = $('.drop', card); if (!drop) return;

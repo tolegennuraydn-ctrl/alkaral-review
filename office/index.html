@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><meta name="robots" content="noindex, nofollow">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI-офис AL KARAL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+  /* One visual world: a bright office in AL KARAL greens. Layout: header + KPI strip, office canvas left, agent roster right, pipeline below. */
+  :root {
+    --bg: #F2F4EE;
+    --ink: #1C1F1A;
+    --muted: #5E6A57;
+    --green: #2F6A2B;
+    --green-deep: #1F4A1D;
+    --lime: #99C339;
+    --card: #FFFFFF;
+    --line: #DCE3D3;
+    --amber: #C98A1B;
+    --display: 'Montserrat', 'Segoe UI', sans-serif;
+    --body: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); }
+  header { background: var(--green-deep); color: #fff; padding: 18px 24px 16px; }
+  .hwrap { max-width: 1440px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 8px 28px; align-items: baseline; }
+  h1 { font-family: var(--display); font-weight: 800; font-size: 26px; margin: 0; letter-spacing: .01em; text-wrap: balance; }
+  h1 .lime { color: var(--lime); }
+  .sub { font-size: 15px; opacity: .85; }
+  .kpis { max-width: 1440px; margin: 14px auto 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; padding: 0 24px; }
+  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; }
+  .kpi b { display: block; font-family: var(--display); font-size: 24px; font-weight: 800; color: var(--green); font-variant-numeric: tabular-nums; }
+  .kpi span { font-size: 12.5px; color: var(--muted); }
+  main { max-width: 1440px; margin: 14px auto; padding: 0 24px 28px; display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; }
+  .stage { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 10px; position: relative; }
+  canvas { display: block; width: 100%; height: auto; border-radius: 10px; cursor: pointer; }
+  .controls { display: flex; gap: 8px; align-items: center; padding: 10px 4px 2px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+  button { font: 600 13px var(--body); border: 1px solid var(--line); background: #fff; color: var(--ink); border-radius: 999px; padding: 7px 14px; cursor: pointer; }
+  button:hover { border-color: var(--green); }
+  button:focus-visible, .agent:focus-visible { outline: 3px solid var(--lime); outline-offset: 2px; }
+  button.on { background: var(--green); color: #fff; border-color: var(--green); }
+  aside { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 14px; }
+  .panel h2 { font-family: var(--display); font-size: 15px; margin: 0 0 10px; }
+  .roster { display: flex; flex-direction: column; gap: 6px; max-height: 470px; overflow-y: auto; }
+  .agent { display: grid; grid-template-columns: 14px 1fr; gap: 10px; align-items: start; padding: 8px 10px; border-radius: 10px; border: 1px solid transparent; cursor: pointer; background: #F7F9F3; }
+  .agent:hover, .agent.sel { border-color: var(--green); background: #EEF4E6; }
+  .dot { width: 14px; height: 14px; border-radius: 50%; margin-top: 3px; }
+  .agent .n { font-weight: 600; font-size: 14px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .agent .t { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+  .chip { font: 600 10.5px var(--body); padding: 2px 7px; border-radius: 999px; background: #E3EFD4; color: var(--green); }
+  .chip.soon { background: #F6E7C9; color: #7A5410; }
+  .detail h3 { font-family: var(--display); margin: 0 0 4px; font-size: 18px; }
+  .detail p { margin: 6px 0; font-size: 14px; line-height: 1.5; }
+  .detail dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; font-size: 13px; margin: 10px 0 0; }
+  .detail dt { color: var(--muted); }
+  .detail dd { margin: 0; font-variant-numeric: tabular-nums; }
+  .flow { max-width: 1440px; margin: 0 auto 30px; padding: 0 24px; }
+  .flow .panel { padding: 16px; }
+  .steps { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13.5px; }
+  .step { background: #F7F9F3; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; }
+  .step b { font-family: var(--display); }
+  .arrow { color: var(--lime); font-weight: 800; }
+  .mode { font-weight: 600; color: var(--ink); background: #FFF6DF; border: 1px solid #EBCB7A; border-radius: 8px; padding: 5px 10px; }
+  .mode.replay { background: #E3EFD4; border-color: #B9D69A; }
+  .ideasbtn { display: inline-block; background: #2F6A2B; color: #fff; text-decoration: none; font-weight: 800; border-radius: 10px; padding: 9px 14px; font-size: 13.5px; margin-bottom: 10px; }
+  .ideas-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }
+  .idea { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font-size: 13px; line-height: 1.4; background: #fff; }
+  .idea .t { color: var(--muted); font-size: 12px; } .idea a { color: #1F4A1D; word-break: break-all; } .idea .s { font-weight: 700; margin-top: 4px; }
+  .note { font-size: 12.5px; color: var(--muted); margin-top: 10px; }
+  .flow h2, .board h2 { font-family: var(--display); font-size: 15px; margin: 0 0 10px; }
+  .muted { color: var(--muted); font-weight: 500; font-family: var(--body); font-size: 13px; }
+  .step.done { background: #E3EFD4; border-color: #B9D69A; }
+  .step.work { background: #FFF6DF; border-color: #EBCB7A; }
+  .step.soon { opacity: .6; border-style: dashed; }
+  .step small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .board { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 16px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; color: var(--muted); margin-bottom: 10px; }
+  .legend i, .pc i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: 0; }
+  .pieces { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px; max-height: 360px; overflow-y: auto; }
+  .pc { border: 1px solid var(--line); border-radius: 10px; padding: 7px 9px; font-size: 12.5px; background: #FBFCF9; }
+  .pc b { font-family: var(--display); margin-right: 4px; }
+  .pc .f { color: var(--muted); }
+  .pc .tt { display: block; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .feed { list-style: none; margin: 0; padding: 0; max-height: 400px; overflow-y: auto; font-size: 13px; }
+  .feed li { display: grid; grid-template-columns: 112px 1fr; gap: 8px; padding: 5px 0; border-bottom: 1px solid #EEF1E8; }
+  .feed time { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .feed .who { font-weight: 600; margin-right: 4px; }
+  .chip.done { background: #E3EFD4; color: var(--green); }
+  .chip.wait { background: #EEF1F4; color: #4A5560; }
+  @media (max-width: 1100px) { main { grid-template-columns: 1fr; } .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .board { grid-template-columns: 1fr; } .roster { max-height: none; } }
+  @media (max-width: 520px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } header, main, .kpis, .flow { padding-left: 16px; padding-right: 16px; } }
+</style>
+</head>
+<body><div style="background:#fff;border-bottom:1px solid #DCE3D3;padding:8px 20px;font:14px system-ui,-apple-system,sans-serif"><a id="officeHome" href="../" style="color:#1F4A1D;font-weight:700;text-decoration:none">← На главную</a></div><script>(function(){var a=document.getElementById('officeHome');if(location.search)a.href+=location.search;})();</script>
+<header>
+  <div class="hwrap">
+    <h1><span id="hclient"></span> · <span class="lime">AI-отдел маркетинга</span></h1>
+    <div class="sub" id="hsub"></div>
+  </div>
+</header>
+<section class="kpis" id="kpis" aria-label="Итоги месяца"></section>
+<main>
+  <div class="stage">
+    <canvas id="office" width="1280" height="780" aria-label="Анимированный офис: агенты работают за столами и передают работу друг другу"></canvas>
+    <div class="controls">
+      <button id="replay" class="on">▶ Показать, как прошёл месяц</button>
+      <button id="play" aria-pressed="false" hidden>Пауза</button>
+      <button id="speed" aria-pressed="false" hidden>Скорость ×1</button>
+      <span id="mode" class="mode"></span>
+      <span>Нажмите на агента, чтобы увидеть его результаты.</span>
+    </div>
+  </div>
+  <aside>
+    <div class="panel detail" id="detail" aria-live="polite"></div>
+    <div class="panel">
+      <h2>Команда</h2>
+      <div class="roster" id="roster"></div>
+    </div>
+  </aside>
+</main>
+<section class="flow">
+  <div class="panel">
+    <h2 style="font-family:var(--display);font-size:15px;margin:0 0 10px">Как проходит месяц</h2>
+    <div class="steps" id="steps"></div>
+    <div class="note">Все цифры на этой странице считаются из реальных файлов месяца: план, готовые материалы, проверки, журнал расходов, отзывы клиента. Страница обновляется после каждого запуска. Каждый факт в контенте — только из базы знаний; ничего не публикуется без согласования.</div>
+  </div>
+</section>
+<section class="flow ideas">
+  <div class="panel">
+    <h2 style="font-family:var(--display);font-size:15px;margin:0 0 6px">💡 Идеи и задания Даны <span class="muted">— референсы из Instagram в план следующего месяца · промпты для ИИ</span></h2>
+    <p class="note" style="margin:0 0 10px">Дана добавляет ссылку на Reels/пост и пишет, что повторить, — Скаут идей включает это в контент-план следующего месяца строго по её словам.
+      Задание с пометкой «как можно скорее» берём в работу при ежедневной утренней проверке (08:37), готовый вариант появляется на странице проверки.</p>
+    <a class="ideasbtn" id="ideasForm" target="_blank" rel="noopener">Открыть форму «Идеи и задания» ↗</a>
+    <div class="ideas-list" id="ideasList"></div>
+  </div>
+</section>
+<section class="flow board">
+  <div class="panel">
+    <h2>Материалы месяца</h2>
+    <div class="legend" id="legend"></div>
+    <div class="pieces" id="pieces"></div>
+  </div>
+  <div class="panel">
+    <h2>Журнал работы <span class="muted">— реальные действия агентов</span></h2>
+    <ol class="feed" id="feed"></ol>
+  </div>
+</section>
+<script>
+(() => {
+  // ---------- agents: fixed roles/tools here; state, numbers, tasks and hand-offs come from DATA (engine/office/build_office.py) ----------
+  const DATA = {"client": "AL KARAL", "month": "2026-11", "month_label": "ноябрь 2026", "months": ["2026-11"], "generated": "2026-11-13 19:43", "kpis": [["27", "публикаций в плане + 4 доп."], ["27/27", "готово (видео смонтировано, дизайн сверстан)"], ["27/27", "прошли проверку фактов (QA)"], ["12/31", "проверено клиентом · ✔ 8 · правки 3"], ["49", "правок по отзывам внесено"], ["$28.8", "из $30 бюджета на ИИ · на 14.11 (обновляется каждый день)"], ["318", "записей в базе знаний — других фактов нет"], ["25", "правил в плейбуке из отзывов"]], "board": ["27 публ.", "16 Reels", "QA 27/27", "$28.8/30"], "ideas": [], "ideas_form": "https://tolegennuraydn-ctrl.github.io/alkaral-review/ideas/?r=dana&name=%D0%94%D0%B0%D0%BD%D0%B0", "agents": {"community": {"state": "soon", "stats": [["Отвечено", "0"], ["Направлено в WhatsApp / колл-центр", "0"], ["Передано человеку", "0"]], "tasks": ["Жду доступ к Instagram"]}, "researcher": {"state": "wait", "stats": [["Исследование к плану", "2026-12: 18 числа"], ["Треков в библиотеке музыки", "42"]], "tasks": ["Сезон, праздники, Kaspi Жұма, тренды ниши — перед каждым планом", "Музыкальная библиотека: 42 треков"]}, "duty": {"state": "done", "stats": [["Последняя проверка", "2026-11-13 23:46"], ["Состояние", "всё в порядке"], ["Предупреждений", "1"], ["Уроков → автоматических проверок", "14"], ["Одобрено и ждёт публикации", "7"]], "tasks": ["Проверка системы каждое утро", "14 прошлых ошибок под контролем", "budget: $28.83 of $30 — paid generation will stop at the cap"]}, "scout": {"state": "wait", "stats": [["Идей в банке", "59 новых · 0 использовано"], ["Замечаний Даны учтено", "41 из 41"], ["Референсы Даны", "0 (в план следующего месяца)"], ["Задания «как можно скорее»", "0 · в работе 0"], ["Ждут Нур ⛔", "0"]], "tasks": ["Смотрю референсы Даны и пишу промпты строго по её комментариям", "Проверяю форму Даны раз в день (08:37)"]}, "analyst": {"state": "soon", "stats": [["Отчёт", "каждый месяц 29 числа"], ["Данные", "после подключения Instagram API"]], "tasks": ["Жду доступ к Instagram API для статистики"]}, "strategist": {"state": "done", "stats": [["План", "27 публикаций + 4 доп."], ["План на следующий месяц", "пишется 18 числа"], ["Форматы", "16 reel, 6 carousel, 3 static, 2 story_series"]], "tasks": ["Контент-план 2026-11: 27 публикаций", "№1 AL KARAL — гормон ба?", "№2 Бұқалар жем жемей тұр ма?"]}, "writer": {"state": "done", "stats": [["Тексты готовы", "27/27"], ["Языки", "20 KZ, 7 RU"]], "tasks": ["Тексты: 27 из 27", "№S1 Бұқаларыңыз қалай жейді? (poll)", "№S2 Миф пе, шындық па? Тексеріңіз!"]}, "auditor": {"state": "done", "stats": [["QA", "27/27 PASS"], ["База знаний", "318 записей"], ["Изменения от Даны", "0 · в работе 0"], ["Правил плейбука", "25"]], "tasks": ["QA: 27/27 PASS", "Каждая цифра — из базы знаний"]}, "critic": {"state": "done", "stats": [["Проверено", "27/27"], ["Раунды", "до 2 доработок"]], "tasks": ["Прочитал 27 материалов", "Понятно ли фермеру?", "Есть ли «почему»?"]}, "designer": {"state": "done", "stats": [["Готово", "11/11 (карусели, посты, сторис)"], ["ИИ-фото и иллюстрации", "23"]], "tasks": ["Дизайн: 11 из 11"]}, "voice": {"state": "done", "stats": [["Реплик озвучено", "115"], ["Стоимость", "$0.12"]], "tasks": ["озвучка: №10, сцена 3", "озвучка: №10, сцена 2", "озвучка: №24, сцена 6"]}, "video": {"state": "done", "stats": [["ИИ-клипов в Reels", "22"], ["Замена на кадр с движением", "24"], ["Кадров проверено", "62"], ["Стоимость", "$12.06"]], "tasks": ["ИИ-клип: №20, сцена 4", "ИИ-клип: №20, сцена 2", "ИИ-клип: №9, сцена 4 анимация пищеварения (по отзыву клиента)"]}, "presenter": {"state": "done", "stats": [["Reels с ведущим", "4"], ["Реплик прошли проверку речи", "11"], ["Стоимость", "$15.56"]], "tasks": ["реплика ведущего: №20, сцена 6", "реплика ведущего: №20, сцена 6", "реплика ведущего: №20, сцена 5"]}, "editor": {"state": "done", "stats": [["Reels смонтировано", "16/16"], ["Громкость", "-14.5 LUFS (цель −14)"], ["Техпроверка (нет застывших кадров и пауз)", "12/16"], ["Планов в монтаже", "126"], ["Пауза между фразами", "0,37 с"]], "tasks": ["Reels: 16 из 16"]}, "sound": {"state": "done", "stats": [["Звуковых акцентов", "189"], ["Музыка", "в самом ролике, тише голоса на ~17 дБ"]], "tasks": ["189 звуковых акцентов в Reels — под то, что происходит в кадре", "Подбираю музыку под ролик и измеряю громкость (−14 LUFS, музыка тише голоса)"]}, "manager": {"state": "work", "stats": [["На странице проверки", "31"], ["Клиент проверил", "12 (✔ 8 · правки 3)"], ["Задачи из отзывов", "49 сделано · 0 в работе · 1 заблокировано"]], "tasks": ["Клиент проверил 12 из 31", "Исправлено задач: 49", "Ждём отзыв: 19 материалов"]}, "publisher": {"state": "soon", "stats": [["Опубликовано", "0/27"], ["Правило", "только после согласования Нур и клиента"]], "tasks": ["Жду согласования"]}, "budget": {"state": "work", "stats": [["Потрачено", "$28.83 из $30"], ["Платных вызовов", "413"], ["Крупнейшие статьи", "presenter $15.56, video $12.06, designer $0.80"]], "tasks": ["Потрачено $28.83 из $30 (на 14.11)", "Остаток $1.17", "Стоп до превышения лимита"]}}, "flow": [["strategist", "writer", "№1 Reels"], ["writer", "auditor", "№1 Reels"], ["auditor", "critic", "№1 Reels"], ["critic", "voice", "№1 Reels"], ["voice", "presenter", "№1 Reels"], ["presenter", "editor", "№1 Reels"], ["editor", "sound", "№1 Reels"], ["sound", "manager", "№1 Reels"], ["strategist", "writer", "№2 Reels"], ["writer", "auditor", "№2 Reels"], ["auditor", "critic", "№2 Reels"], ["critic", "voice", "№2 Reels"], ["voice", "video", "№2 Reels"], ["video", "editor", "№2 Reels"], ["editor", "sound", "№2 Reels"], ["sound", "manager", "№2 Reels"], ["strategist", "writer", "№3 Карусель"], ["writer", "auditor", "№3 Карусель"], ["auditor", "critic", "№3 Карусель"], ["critic", "designer", "№3 Карусель"], ["designer", "manager", "№3 Карусель"], ["strategist", "writer", "№4 Reels"], ["writer", "auditor", "№4 Reels"], ["auditor", "critic", "№4 Reels"], ["critic", "voice", "№4 Reels"], ["voice", "video", "№4 Reels"], ["video", "editor", "№4 Reels"], ["editor", "sound", "№4 Reels"], ["sound", "manager", "№4 Reels"], ["strategist", "writer", "№5 Пост"], ["writer", "auditor", "№5 Пост"], ["auditor", "critic", "№5 Пост"], ["critic", "designer", "№5 Пост"], ["designer", "manager", "№5 Пост"], ["strategist", "writer", "№6 Reels"], ["writer", "auditor", "№6 Reels"], ["auditor", "critic", "№6 Reels"], ["critic", "voice", "№6 Reels"], ["voice", "video", "№6 Reels"], ["video", "editor", "№6 Reels"], ["editor", "sound", "№6 Reels"], ["sound", "manager", "№6 Reels"], ["strategist", "writer", "№7 Карусель"], ["writer", "auditor", "№7 Карусель"], ["auditor", "critic", "№7 Карусель"], ["critic", "designer", "№7 Карусель"], ["designer", "manager", "№7 Карусель"], ["strategist", "writer", "№8 Reels"], ["writer", "auditor", "№8 Reels"], ["auditor", "critic", "№8 Reels"], ["critic", "voice", "№8 Reels"], ["voice", "video", "№8 Reels"], ["video", "editor", "№8 Reels"], ["editor", "sound", "№8 Reels"], ["sound", "manager", "№8 Reels"], ["strategist", "writer", "№9 Reels"], ["writer", "auditor", "№9 Reels"], ["auditor", "critic", "№9 Reels"], ["critic", "voice", "№9 Reels"], ["voice", "video", "№9 Reels"], ["video", "editor", "№9 Reels"], ["editor", "sound", "№9 Reels"], ["sound", "manager", "№9 Reels"], ["manager", "editor", "№9 правки клиента"], ["strategist", "writer", "№10 Reels"], ["writer", "auditor", "№10 Reels"], ["auditor", "critic", "№10 Reels"], ["critic", "voice", "№10 Reels"], ["voice", "presenter", "№10 Reels"], ["presenter", "editor", "№10 Reels"], ["editor", "sound", "№10 Reels"], ["sound", "manager", "№10 Reels"], ["manager", "editor", "№10 правки клиента"], ["strategist", "writer", "№11 Карусель"], ["writer", "auditor", "№11 Карусель"], ["auditor", "critic", "№11 Карусель"], ["critic", "designer", "№11 Карусель"], ["designer", "manager", "№11 Карусель"], ["manager", "designer", "№11 правки клиента"], ["strategist", "writer", "№12 Reels"], ["writer", "auditor", "№12 Reels"], ["auditor", "critic", "№12 Reels"], ["critic", "voice", "№12 Reels"], ["voice", "video", "№12 Reels"], ["video", "editor", "№12 Reels"], ["editor", "sound", "№12 Reels"], ["sound", "manager", "№12 Reels"], ["strategist", "writer", "№13 Reels"], ["writer", "auditor", "№13 Reels"], ["auditor", "critic", "№13 Reels"], ["critic", "voice", "№13 Reels"], ["voice", "presenter", "№13 Reels"], ["presenter", "editor", "№13 Reels"], ["editor", "sound", "№13 Reels"], ["sound", "manager", "№13 Reels"], ["strategist", "writer", "№14 Пост"], ["writer", "auditor", "№14 Пост"], ["auditor", "critic", "№14 Пост"], ["critic", "designer", "№14 Пост"], ["designer", "manager", "№14 Пост"], ["strategist", "writer", "№15 Карусель"], ["writer", "auditor", "№15 Карусель"], ["auditor", "critic", "№15 Карусель"], ["critic", "designer", "№15 Карусель"], ["designer", "manager", "№15 Карусель"], ["strategist", "writer", "№16 Reels"], ["writer", "auditor", "№16 Reels"], ["auditor", "critic", "№16 Reels"], ["critic", "voice", "№16 Reels"], ["voice", "video", "№16 Reels"], ["video", "editor", "№16 Reels"], ["editor", "sound", "№16 Reels"], ["sound", "manager", "№16 Reels"], ["strategist", "writer", "№17 Reels"], ["writer", "auditor", "№17 Reels"], ["auditor", "critic", "№17 Reels"], ["critic", "voice", "№17 Reels"], ["voice", "video", "№17 Reels"], ["video", "editor", "№17 Reels"], ["editor", "sound", "№17 Reels"], ["sound", "manager", "№17 Reels"], ["strategist", "writer", "№18 Reels"], ["writer", "auditor", "№18 Reels"], ["auditor", "critic", "№18 Reels"], ["critic", "voice", "№18 Reels"], ["voice", "video", "№18 Reels"], ["video", "editor", "№18 Reels"], ["editor", "sound", "№18 Reels"], ["sound", "manager", "№18 Reels"], ["strategist", "writer", "№19 Карусель"], ["writer", "auditor", "№19 Карусель"], ["auditor", "critic", "№19 Карусель"], ["critic", "designer", "№19 Карусель"], ["designer", "manager", "№19 Карусель"], ["strategist", "writer", "№20 Reels"], ["writer", "auditor", "№20 Reels"], ["auditor", "critic", "№20 Reels"], ["critic", "voice", "№20 Reels"], ["voice", "presenter", "№20 Reels"], ["presenter", "editor", "№20 Reels"], ["editor", "sound", "№20 Reels"], ["sound", "manager", "№20 Reels"], ["strategist", "writer", "№21 Карусель"], ["writer", "auditor", "№21 Карусель"], ["auditor", "critic", "№21 Карусель"], ["critic", "designer", "№21 Карусель"], ["designer", "manager", "№21 Карусель"], ["strategist", "writer", "№22 Reels"], ["writer", "auditor", "№22 Reels"], ["auditor", "critic", "№22 Reels"], ["critic", "voice", "№22 Reels"], ["voice", "video", "№22 Reels"], ["video", "editor", "№22 Reels"], ["editor", "sound", "№22 Reels"], ["sound", "manager", "№22 Reels"], ["strategist", "writer", "№23 Пост"], ["writer", "auditor", "№23 Пост"], ["auditor", "critic", "№23 Пост"], ["critic", "designer", "№23 Пост"], ["designer", "manager", "№23 Пост"], ["strategist", "writer", "№24 Reels"], ["writer", "auditor", "№24 Reels"], ["auditor", "critic", "№24 Reels"], ["critic", "voice", "№24 Reels"], ["voice", "video", "№24 Reels"], ["video", "editor", "№24 Reels"], ["editor", "sound", "№24 Reels"], ["sound", "manager", "№24 Reels"], ["strategist", "writer", "№25 Reels"], ["writer", "auditor", "№25 Reels"], ["auditor", "critic", "№25 Reels"], ["critic", "voice", "№25 Reels"], ["voice", "video", "№25 Reels"], ["video", "editor", "№25 Reels"], ["editor", "sound", "№25 Reels"], ["sound", "manager", "№25 Reels"], ["strategist", "writer", "№S1 story_series"], ["writer", "auditor", "№S1 story_series"], ["auditor", "critic", "№S1 story_series"], ["critic", "designer", "№S1 story_series"], ["designer", "manager", "№S1 story_series"], ["strategist", "writer", "№S2 story_series"], ["writer", "auditor", "№S2 story_series"], ["auditor", "critic", "№S2 story_series"], ["critic", "designer", "№S2 story_series"], ["designer", "manager", "№S2 story_series"], ["manager", "auditor", "отзывы → плейбук"]], "stages": [{"name": "Аналитика и тренды", "state": "soon", "detail": "в разработке"}, {"name": "Контент-план", "state": "done", "detail": "27 публикаций"}, {"name": "Тексты KZ/RU", "state": "done", "detail": "27/27"}, {"name": "Проверка фактов и критика", "state": "done", "detail": "27/27 PASS"}, {"name": "Дизайн, озвучка, видео, монтаж", "state": "done", "detail": "27/27 готово"}, {"name": "Согласование с клиентом", "state": "work", "detail": "12/31 проверено · 49 правок внесено"}, {"name": "Публикация", "state": "soon", "detail": "0/27"}, {"name": "Отзывы → правила плейбука", "state": "done", "detail": "25 правил"}], "feed": [{"ts": "2026-11-10 11:06", "agent": "manager", "text": "Дана: одобрено · №8"}, {"ts": "2026-11-10 11:05", "agent": "manager", "text": "Дана: одобрено · №4"}, {"ts": "2026-11-10 11:05", "agent": "manager", "text": "Дана: одобрено · №5"}, {"ts": "2026-11-10 11:05", "agent": "manager", "text": "Дана: одобрено · №7"}, {"ts": "2026-11-10 11:00", "agent": "manager", "text": "Дана: одобрено · №3"}, {"ts": "2026-11-10 10:50", "agent": "manager", "text": "Дана: одобрено · №6"}, {"ts": "2026-11-10 10:50", "agent": "manager", "text": "Дана: одобрено · №2"}, {"ts": "2026-11-10 10:49", "agent": "manager", "text": "Дана: одобрено · №1"}, {"ts": "2026-11-10 10:48", "agent": "manager", "text": "Дана: отклонено · №KJ"}, {"ts": "2026-11-06 23:25", "agent": "presenter", "text": "реплика ведущего · №20, сцена 6"}, {"ts": "2026-11-06 23:25", "agent": "sound", "text": "музыка · фон для №20"}, {"ts": "2026-11-06 23:24", "agent": "presenter", "text": "реплика ведущего · №20, сцена 6"}, {"ts": "2026-11-06 23:23", "agent": "presenter", "text": "реплика ведущего · №20, сцена 5"}, {"ts": "2026-11-06 23:22", "agent": "video", "text": "ИИ-клип · №20, сцена 4"}, {"ts": "2026-11-06 23:22", "agent": "presenter", "text": "реплика ведущего · №20, сцена 5"}, {"ts": "2026-11-06 23:21", "agent": "presenter", "text": "реплика ведущего · №20, сцена 3"}, {"ts": "2026-11-06 23:21", "agent": "video", "text": "кадр для клипа · №20, сцена 4"}, {"ts": "2026-11-06 23:20", "agent": "video", "text": "ИИ-клип · №20, сцена 2"}, {"ts": "2026-11-06 23:19", "agent": "video", "text": "кадр для клипа · №20, сцена 2"}, {"ts": "2026-11-06 23:16", "agent": "sound", "text": "музыка · фон для №13"}, {"ts": "2026-11-06 23:14", "agent": "presenter", "text": "реплика ведущего · №13, сцена 3"}, {"ts": "2026-11-06 23:08", "agent": "sound", "text": "музыка · фон для №10"}, {"ts": "2026-11-06 23:07", "agent": "presenter", "text": "реплика ведущего · №10, сцена 6"}, {"ts": "2026-11-06 23:06", "agent": "voice", "text": "озвучка · №10, сцена 2"}, {"ts": "2026-11-06 23:06", "agent": "voice", "text": "озвучка · №10, сцена 3"}, {"ts": "2026-11-06 23:06", "agent": "presenter", "text": "реплика ведущего · №10, сцена 4"}, {"ts": "2026-11-06 22:58", "agent": "designer", "text": "иллюстрация · ill-leonardite"}, {"ts": "2026-11-06 22:58", "agent": "designer", "text": "иллюстрация · ill-acids-cells"}, {"ts": "2026-11-06 22:58", "agent": "designer", "text": "иллюстрация · ill-safe-herd"}, {"ts": "2026-11-06 22:58", "agent": "designer", "text": "иллюстрация · ill-premix-feed"}, {"ts": "2026-11-06 22:58", "agent": "designer", "text": "иллюстрация · ill-calves"}, {"ts": "2026-11-06 22:58", "agent": "designer", "text": "иллюстрация · ill-myth-farmer"}, {"ts": "2026-11-06 22:58", "agent": "designer", "text": "иллюстрация · ill-certified-herd"}, {"ts": "2026-11-06 19:52", "agent": "voice", "text": "озвучка · №24, сцена 6"}, {"ts": "2026-11-06 18:56", "agent": "voice", "text": "озвучка · №20, сцена 2"}, {"ts": "2026-11-06 18:56", "agent": "voice", "text": "озвучка · №20, сцена 3"}, {"ts": "2026-11-06 18:50", "agent": "voice", "text": "озвучка · №2, сцена 5"}, {"ts": "2026-11-06 18:46", "agent": "voice", "text": "озвучка · №4, сцена 6"}, {"ts": "2026-11-06 18:41", "agent": "sound", "text": "музыка · bed bright-sales (Nur 6 Nov: bg music)"}, {"ts": "2026-11-06 18:41", "agent": "sound", "text": "музыка · bed soft-talk (Nur 6 Nov: bg music)"}, {"ts": "2026-11-06 18:40", "agent": "sound", "text": "музыка · bed warm-steppe (Nur 6 Nov: bg music)"}, {"ts": "2026-11-06 18:40", "agent": "sound", "text": "музыка · bed farm-documentary (Nur 6 Nov: bg music)"}, {"ts": "2026-11-06 16:57", "agent": "voice", "text": "проба голоса · deeper voice sample deeper-a ru (Dana 6 Nov)"}, {"ts": "2026-11-06 16:57", "agent": "voice", "text": "проба голоса · deeper voice sample deeper-a kz (Dana 6 Nov)"}, {"ts": "2026-11-06 16:57", "agent": "voice", "text": "проба голоса · deeper voice sample deeper-b ru (Dana 6 Nov)"}, {"ts": "2026-11-06 16:57", "agent": "voice", "text": "проба голоса · deeper voice sample deeper-b kz (Dana 6 Nov)"}, {"ts": "2026-11-06 16:44", "agent": "video", "text": "ИИ-клип · №9, сцена 4 анимация пищеварения (по отзыву клиента)"}, {"ts": "2026-11-06 16:32", "agent": "voice", "text": "озвучка · №10, сцена 1"}, {"ts": "2026-11-06 16:32", "agent": "voice", "text": "озвучка · №10, сцена 3"}, {"ts": "2026-11-06 16:20", "agent": "designer", "text": "иллюстрация · №7 slide6 anatomy"}, {"ts": "2026-11-06 14:31", "agent": "manager", "text": "Дана: на доработку · №11"}, {"ts": "2026-11-06 14:19", "agent": "manager", "text": "Дана: на доработку · №10"}, {"ts": "2026-11-06 14:17", "agent": "manager", "text": "Дана: на доработку · №9"}, {"ts": "2026-11-05 22:42", "agent": "video", "text": "кадр · №20, сцена 2"}, {"ts": "2026-11-05 22:42", "agent": "video", "text": "кадр · №20, сцена 3"}, {"ts": "2026-11-05 22:42", "agent": "video", "text": "кадр · №20, сцена 5"}, {"ts": "2026-11-05 22:37", "agent": "voice", "text": "озвучка · №25, сцена 1"}, {"ts": "2026-11-05 22:37", "agent": "voice", "text": "озвучка · №25, сцена 2"}, {"ts": "2026-11-05 22:37", "agent": "voice", "text": "озвучка · №25, сцена 3"}, {"ts": "2026-11-05 22:37", "agent": "voice", "text": "озвучка · №25, сцена 4"}], "pieces": [{"id": "2026-11-08", "n": "1", "title": "AL KARAL — гормон ба?", "format": "Reels", "fmt": "reel", "style": "ai_presenter", "lang": "KZ", "qa": "PASS", "produced": true, "decision": "approve", "tasks": {"done": 2}, "stage": "approved", "why_not_produced": null, "fallbacks": 0}, {"id": "2026-11-09", "n": "2", "title": "Бұқалар жем жемей тұр ма?", "format": "Reels", "fmt": "reel", "style": "voiceover_footage", "lang": "KZ", "qa": "PASS", "produced": true, "decision": "approve", "tasks": {"done": 2}, "stage": "approved", "why_not_produced": null, "fallbacks": 0}, {"id": "2026-11-10", "n": "3", "title": "Бұзаулардың салмақ қосуы +40%-ға дейін*. Қалай?", "format": "Карусель", "fmt": "carousel", "style": "", "lang": "KZ", "qa": "PASS", "produced": true, "decision": "approve", "tasks": {"done": 5}, "stage": "approved", "why_not_produced": null, "fallbacks": 0}, {"id": "2026-11-11", "n": "4", "title": "Дорого? Посчитаем на одного бычка", "format": "Reels", "fmt": "reel", "style": "farm_math", "lang": "RU", "qa": "PASS", "produced": true, "decision": "approve", "tasks": {"done": 3, "blocked": 1}, "stage": "approved", "why_not_produced": null, "fallbacks": 0}, {"id": "2026-11-12", "n": "5", "title": "Мықты ас қорыту — жылқыңыздың күші", "format": "Пост", "fmt": "static", "style": "", "lang": "KZ", "qa": "PASS", "produced": true, "decision": "approve", "tasks": {"done": 2}, "stage": "approved", "why_not_produced": null, "fallbacks": 0}, {"id": "2026-11-13", "n": "6", "title": "Бұл канистрдің ішінде не бар?", "format": "Reels", "fmt": "reel", "style": "brand_film", "lang": "KZ", "qa": "PASS", "produced": true, "decision": "approve", "tasks": {}, "stage": "approved", "why_not_produced": null, "fallbacks": 0}, {"id": "2026-11-14", "n": "7", "title": "Миф пе, шындық па? «AL KARAL — химия»", "format": "Карусель", "fmt": "carousel", "style": "", "lang": "KZ", "qa": "PASS", "produced": true, "decision": "approve", "tasks": {"done": 4}, "stage": "approved", "why_not_produced": null, "fallbacks": 0}, {"id": "2026-11-15", "n": "8", "title": "**Было → стало. Реальные фото** · Фото из хозяйств, применявших AL KARAL", "format": "Reels", "fmt": "reel", "style": "before_after", "lang": "RU", "qa": "PASS", "produced": true, "decision": "approve", "tasks": {"done": 2}, "stage": "approved", "why_not_produced": null, "fallbacks": 4}, {"id": "2026-11-16", "n": "9", "title": "**Жем қайда кетеді?**", "format": "Reels", "fmt": "reel", "style": "explainer", "lang": "KZ", "qa": "PASS", "produced": true, "decision": "revise", "tasks": {"done": 2}, "stage": "fixed", "why_not_produced": null, "fallbacks": 0}, {"id": "2026-11-17", "n": "10", "title": "Бізден жиі сұрайды:", "format": "Reels", "fmt": "reel", "style": "ai_presenter", "lang": "KZ", "qa": "PASS", "produced": true, "decision": "revise", "tasks": {"done": 3}, "stage": "fixed", "why_not_produced": null, "fallbacks": 0}, {"id": "2026-11-18", "n": "11", "title": "Сатып алмас бұрын білу керек 5 факт", "format": "Карусель", "fmt": "carousel", "style": "", "lang": "KZ", "qa": "PASS", "produced": true, "decision": "revise", "tasks": {"done": 9}, "stage": "fixed", "why_not_produced": null, "fallbacks": 0}, {"id": "2026-11-19", "n": "12", "title": "**Зима в стойле: как помочь скоту хорошо есть?**", "format": "Reels", "fmt": "reel", "style": "seasonal", "lang": "RU", "qa": "PASS", "produced": true, "decision": null, "tasks": {}, "stage": "review", "why_not_produced": null, "fallbacks": 0}, {"id": "2026-11-20", "n": "13", "title": "**Укол сияқты бірден әсер ете ме?**", "format": "Reels", "fmt": "reel", "style": "ai_presenter", "lang": "KZ", "qa": "PASS", "produced": true, "decision": null, "tasks": {}, "stage": "review", "why_not_produced": null, "fallbacks": 1}, {"id": "2026-11-21", "n": "14", "title": "Шикізаттан жапсырмаға дейін — бәрі қазақстандық", "format": "Пост", "fmt": "static", "style": "", "lang": "KZ", "qa": "PASS", "produced": true, "decision": null, "tasks": {}, "stage": "review", "why_not_produced": null, "fallbacks": 0}, {"id": "2026-11-22", "n": "15", "title": "8 хозяйств. 4 региона. Реальные цифры*", "format": "Карусель", "fmt": "carousel", "style": "", "lang": "RU", "qa": "PASS", "produced": true, "decision": null, "tasks": {}, "stage": "review", "why_not_produced": null, "fallbacks": 0}, {"id": "2026-11-23", "n": "16", "title": "Сиыр, қой, жылқы, тауық — әрқайсысына өз канистрі", "format": "Reels", "fmt": "reel", "style": "voiceover_footage", "lang": "KZ", "qa": "PASS", "produced": true, "decision": null, "tasks": {}, "stage": "review", "why_not_produced": null, "fallbacks": 0}, {"id": "2026-11-24", "n": "17", "title": "≈120 ₸ в день на бычка 200 кг (расчёт по инструкции)", "format": "Reels", "fmt": "reel", "style": "text_kinetic", "lang": "RU", "qa": "PASS", "produced": true, "decision": null, "tasks": {}, "stage": "review", "why_not_produced": null, "fallbacks": 0}, {"id": "2026-11-25", "n": "18", "title": "Жылқыңыз бұрынғыдай сергек емес пе?", "format": "Reels", "fmt": "reel", "style": "voiceover_footage", "lang": "KZ", "qa": "PASS", "produced": true, "decision": null, "tasks": {}, "stage": "review", "why_not_produced": null, "fallbacks": 0}, {"id": "2026-11-26", "n": "19", "title": "«Жем жақсы болса, қоспа керек емес». Миф пе, шындық па?", "format": "Карусель", "fmt": "carousel", "style": "", "lang": "KZ", "qa": "PASS", "produced": true, "decision": null, "tasks": {}, "stage": "review", "why_not_produced": null, "fallbacks": 0}, {"id": "2026-11-27", "n": "20", "title": "**+2,1 л среднесуточного удоя*** в хозяйстве «Күміс Шалғын», Костанайская обл. Рассказываю, как", "format": "Reels", "fmt": "reel", "style": "ai_presenter", "lang": "RU", "qa": "PASS", "produced": true, "decision": null, "tasks": {}, "stage": "review", "why_not_produced": null, "fallbacks": 2}, {"id": "2026-11-28a", "n": "21", "title": "Ветаптекам: пять вопросов фермеров об AL KARAL — и ответы", "format": "Карусель", "fmt": "carousel", "style": "", "lang": "RU", "qa": "PASS", "produced": true, "decision": null, "tasks": {}, "stage": "review", "why_not_produced": null, "fallbacks": 0}, {"id": "2026-11-28b", "n": "22", "title": "**«Мал баққанға бітеді»**", "format": "Reels", "fmt": "reel", "style": "proverb", "lang": "KZ", "qa": "PASS", "produced": true, "decision": null, "tasks": {}, "stage": "review", "why_not_produced": null, "fallbacks": 0}, {"id": "2026-11-29", "n": "23", "title": "Неше бас малыңыз бар? Сетті сол бойынша таңдаңыз", "format": "Пост", "fmt": "static", "style": "", "lang": "KZ", "qa": "PASS", "produced": true, "decision": null, "tasks": {}, "stage": "review", "why_not_produced": null, "fallbacks": 0}, {"id": "2026-11-30a", "n": "24", "title": "**Жылқыға күніне қанша теңге?**", "format": "Reels", "fmt": "reel", "style": "farm_math", "lang": "KZ", "qa": "PASS", "produced": true, "decision": null, "tasks": {}, "stage": "review", "why_not_produced": null, "fallbacks": 0}, {"id": "2026-11-30b", "n": "25", "title": "**Бұрын → қазір. Нақты фото**", "format": "Reels", "fmt": "reel", "style": "before_after", "lang": "KZ", "qa": "PASS", "produced": true, "decision": null, "tasks": {}, "stage": "review", "why_not_produced": null, "fallbacks": 0}, {"id": "2026-11-S1", "n": "S1", "title": "Бұқаларыңыз қалай жейді? (poll)", "format": "story_series", "fmt": "story_series", "style": "", "lang": "KZ", "qa": "PASS", "produced": true, "decision": null, "tasks": {}, "stage": "review", "why_not_produced": null, "fallbacks": 0}, {"id": "2026-11-S2", "n": "S2", "title": "Миф пе, шындық па? Тексеріңіз!", "format": "story_series", "fmt": "story_series", "style": "", "lang": "KZ", "qa": "PASS", "produced": true, "decision": null, "tasks": {}, "stage": "review", "why_not_produced": null, "fallbacks": 0}, {"id": "kaspi-juma", "n": "KJ", "title": "Kaspi Жұма: ІҚМ 4 канистр — 35 960 ₸", "format": "Stories ×4 + post", "stage": "fixing"}, {"id": "extra-codex-1", "n": "+1", "title": "Дополнительное видео 1", "format": "Reel", "stage": "review"}, {"id": "extra-codex-2", "n": "+2", "title": "Дополнительное видео 2", "format": "Reel", "stage": "review"}, {"id": "extra-codex-3", "n": "+3", "title": "Дополнительное видео 3", "format": "Reel", "stage": "review"}], "blocked": [{"piece": "2026-11-11", "text": "4-n1 ⛔ Lower-timbre voice. Blocked for two reasons: (1) Nur decided on 6 Nov «current is good» (playbook «Not applied»), so this needs"}]};
+  const A = [
+    { id: 'analyst', name: 'Аналитик', color: '#3E7CB1', desk: [110, 150],
+      role: 'Считает результаты Instagram: 29 числа — подробный отчёт за месяц, каждое утро — страница «Сейчас». Его выводы обязательны для следующего контент-плана.',
+      tools: 'Статистика Instagram (официальный API) · отчёты на сайте' },
+    { id: 'researcher', name: 'Исследователь', color: '#5B8C5A', desk: [300, 150],
+      role: 'Перед каждым планом изучает сезон в животноводстве Казахстана, праздники, даты Kaspi Жұма и что сейчас работает в нише. Пополняет библиотеку музыки.',
+      tools: 'Веб-поиск с источниками · календарь · библиотека музыки' },
+    { id: 'strategist', name: 'Стратег', color: '#2F6A2B', desk: [490, 150],
+      role: 'Собирает бриф (цели, цифры прошлого месяца, все замечания и идеи Даны) и составляет контент-план: рубрики, форматы, даты, хуки. Каждый вывод из отчёта привязан к конкретным публикациям.',
+      tools: 'Бриф · автоматическая проверка плана' },
+    { id: 'writer', name: 'Копирайтер', color: '#7A4FB0', desk: [680, 150],
+      role: 'Пишет сценарии Reels, тексты каруселей и подписи на казахском и русском в голосе бренда. Хуки не повторяются два месяца.',
+      tools: 'Claude · голос бренда · плейбук' },
+    { id: 'auditor', name: 'Аудитор фактов', color: '#B5452F', desk: [870, 150],
+      role: 'Сверяет каждую цифру и утверждение с базой знаний клиента. Ведёт изменения от Даны: устаревшее блокирует, новое вносит в базу, снимает с расписания публикации со старой информацией.',
+      tools: 'QA-чеклист · база знаний · форма «Изменения»' },
+    { id: 'critic', name: 'Критик', color: '#5A5A5A', desk: [1060, 150],
+      role: 'Независимо оценивает каждую публикацию глазами фермера и сверяет её с каждым правилом плейбука и прошлыми замечаниями Даны. Ниже 8 баллов или нарушено правило — переделка.',
+      tools: 'Независимая проверка Claude · плейбук' },
+    { id: 'designer', name: 'Дизайнер', color: '#C2557A', desk: [110, 400],
+      role: 'Делает карусели, посты и сторис по фирменному стилю: фото или иллюстрация на каждом слайде, номер WhatsApp везде.',
+      tools: 'HTML/CSS-шаблоны · Montserrat · ИИ-иллюстрации' },
+    { id: 'voice', name: 'Голос', color: '#D27A2C', desk: [300, 400],
+      role: 'Озвучивает тексты голосом Koda на казахском и русском; вопрос зрителя звучит другим голосом.',
+      tools: 'Gemini TTS' },
+    { id: 'video', name: 'AI-видео', color: '#1F8A8A', desk: [490, 400],
+      role: 'Генерирует короткие ИИ-клипы: бычки у кормушки, степь, 3D-анимация пищеварения. Проверяет каждый кадр.',
+      tools: 'Gemini Omni (видео) · проверка кадров' },
+    { id: 'presenter', name: 'AI-ведущий', color: '#3B8F4E', desk: [680, 400],
+      role: 'Ведущий-аватар говорит в кадре свои реплики. Система сверяет его речь со сценарием до последнего слова.',
+      tools: 'Gemini Omni · проверка речи' },
+    { id: 'editor', name: 'Монтажёр', color: '#4B5FC1', desk: [870, 400],
+      role: 'Собирает Reels: субтитры по реальному звуку, безопасные зоны Instagram, анимированная концовка с CTA.',
+      tools: 'Remotion · ffmpeg' },
+    { id: 'sound', name: 'Звукорежиссёр', color: '#8E5BC8', desk: [1060, 400],
+      role: 'Добавляет звуковые акценты и подбирает фоновую музыку под каждый ролик. Громкость измеряется: музыка примерно на 17 дБ тише голоса, один трек не чаще двух раз в месяц.',
+      tools: 'Библиотека музыки · измерение громкости' },
+    { id: 'manager', name: 'Менеджер согласований', color: '#2B6CB0', desk: [110, 640],
+      role: 'Ведёт согласование с отделом маркетинга: план и готовые материалы на сайте проверки, каждое замечание Даны — отдельная задача, исправление в тот же день.',
+      tools: 'Сайт проверки · почта' },
+    { id: 'publisher', name: 'Публикатор', color: '#9A6B2F', desk: [300, 640],
+      role: 'Составляет расписание на неделю только из одобренных материалов (одна публикация в день, 20:30) для Instagram, TikTok и YouTube.',
+      tools: 'Страница публикаций · сервис планирования (подключается)' },
+    { id: 'budget', name: 'Контроль бюджета', color: '#6B7A2F', desk: [490, 640],
+      role: 'Учитывает каждый платный вызов ИИ и останавливает работу до превышения лимита месяца.',
+      tools: 'Журнал расходов' },
+    { id: 'scout', name: 'Скаут идей', color: '#C0841A', desk: [680, 640],
+      role: 'Ведёт банк идей: неиспользованные факты из базы знаний, вопросы подписчиков, продолжения лучших постов, находки из исследования и референсы Даны. У каждой публикации есть источник идеи.',
+      tools: 'Банк идей · библиотека форматов · форма «Идеи и задания»' },
+    { id: 'community', name: 'Оператор ответов', color: '#B0568C', desk: [1060, 640],
+      role: 'Отвечает на комментарии и сообщения в Instagram: только по базе знаний, в тоне прежних ответов аккаунта. Если ответа в базе нет — направляет в WhatsApp или колл-центр. Жалобы передаёт человеку.',
+      tools: 'Instagram API · база знаний · проверка каждого ответа' },
+    { id: 'duty', name: 'Дежурный', color: '#444B6E', desk: [870, 640],
+      role: 'Каждое утро проверяет всю систему: код, базу знаний, расписание, страницы сайта, бюджет, запас одобренных публикаций. Каждая прошлая ошибка превращена в автоматическую проверку.',
+      tools: 'Проверка здоровья · журнал уроков · сторож на GitHub' },
+  ];
+  const FLOW = DATA.flow;
+  for (const a of A) Object.assign(a, DATA.agents[a.id] || { state: 'wait', stats: [], tasks: ['—'] });
+  for (const a of A) { a.status = a.state; if (!a.tasks.length) a.tasks = ['—']; }
+  const byId = Object.fromEntries(A.map((a) => [a.id, a]));
+
+  // ---------- canvas ----------
+  const cv = document.getElementById('office'), g = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let mode = 'idle', playing = true, speed = 1, selected = 'manager', t0 = performance.now(), simT = 0;
+
+  A.forEach((a, i) => {
+    a.x = a.desk[0]; a.y = a.desk[1] + 46; a.state = 'sit'; a.task = 0; a.taskT = 2 + (i % 5) * 0.7;
+    a.path = []; a.carry = null; a.bubble = a.tasks[0]; a.bubbleT = 3 + (i % 4); a.walkPh = 0;
+  });
+
+  // corridors between desk rows: y = 285 and 525; vertical moves on x of the desk
+  function route(a, tx, ty) {
+    const cy = Math.abs(a.y - ty) < 30 ? a.y : (a.y < 400 && ty < 400 ? 285 : a.y > 400 && ty > 400 ? 525 : null);
+    const pts = [];
+    if (cy !== null) { pts.push([a.x, cy], [tx, cy], [tx, ty]); }
+    else { const c1 = a.y < ty ? (a.y < 400 ? 285 : 525) : (a.y > 520 ? 525 : 285); const c2 = c1 === 285 ? 525 : 285;
+      pts.push([a.x, c1], [1230, c1], [1230, c2], [tx, c2], [tx, ty]); }
+    a.path = pts;
+  }
+  let flowI = 0, flowT = 1.5;
+  function nextHandoff() {
+    if (!FLOW.length) return;
+    let tries = 0, from, to, what;
+    if (byId[FLOW[flowI][0]].state !== 'work') return;  // wait until the sender is back at the desk — keeps the real order
+    [from, to, what] = FLOW[flowI]; flowI++; tries++;
+    updateMode();
+    const a = byId[from], b = byId[to];
+    if (a.state !== 'work' || a.status === 'soon') return;
+    a.state = 'go'; a.carry = what; a.target = to; a.bubble = `Несу: ${what} → ${b.name}`; a.bubbleT = 4;
+    route(a, b.desk[0] + 40, b.desk[1] + 56);
+  }
+
+  function step(dt) {
+    simT += dt;
+    flowT -= dt;
+    if (mode === 'replay') {
+      if (flowI < FLOW.length) { if (flowT <= 0) { nextHandoff(); flowT = 1.4; } }
+      else if (A.every((a) => a.state === 'work')) endReplay();
+    }
+    for (const a of A) {
+      a.bubbleT -= dt;
+      if (a.state === 'work' || a.state === 'sit') {
+        a.taskT -= dt;
+        if (a.taskT <= 0 && a.status !== 'soon') { a.task = (a.task + 1) % a.tasks.length; a.bubble = a.tasks[a.task]; a.bubbleT = 4.2; a.taskT = 5 + (a.desk[0] % 3); }
+      } else if (a.path.length) {
+        const [px, py] = a.path[0]; const dx = px - a.x, dy = py - a.y, d = Math.hypot(dx, dy), v = 120 * dt;
+        a.walkPh += dt * 10;
+        if (d <= v) { a.x = px; a.y = py; a.path.shift(); } else { a.x += dx / d * v; a.y += dy / d * v; }
+      } else if (a.state === 'go') {
+        const b = byId[a.target]; a.state = 'back'; a.bubble = `Готово: ${a.carry}`; a.bubbleT = 2.5; b.bubble = `Принял: ${a.carry}`; b.bubbleT = 3;
+        a.carry = null; route(a, a.desk[0], a.desk[1] + 46);
+      } else if (a.state === 'back') { a.state = 'work'; a.taskT = 2; }
+    }
+  }
+
+  // ---------- drawing ----------
+  function rr(x, y, w, h, r) { g.beginPath(); g.roundRect(x, y, w, h, r); }
+  function drawRoom() {
+    g.fillStyle = '#E9EDE2'; g.fillRect(0, 0, W, H);
+    // floor planks
+    for (let y = 0; y < H; y += 26) { g.fillStyle = (y / 26) % 2 ? '#EEF1E8' : '#E8ECE1'; g.fillRect(0, y, W, 26); }
+    // zone rugs
+    const zones = [[40, 60, 1100, 210, 'Стратегия и тексты'], [40, 310, 1180, 210, 'Продакшн'], [40, 550, 1180, 210, 'Согласование · публикация · бюджет · идеи · контроль']];
+    for (const [x, y, w, h, label] of zones) { g.fillStyle = 'rgba(47,106,43,.06)'; rr(x, y, w, h, 18); g.fill(); g.fillStyle = '#5E6A57'; g.font = '600 13px "IBM Plex Sans"'; g.fillText(label.toUpperCase(), x + 14, y + 22); }
+    // wall board with live numbers
+    g.fillStyle = '#1F4A1D'; rr(1160, 70, 100, 190, 10); g.fill();
+    g.fillStyle = '#99C339'; g.font = '800 15px Montserrat'; g.fillText('ПЛАН', 1178, 96);
+    g.fillStyle = '#fff'; g.font = '600 12px "IBM Plex Sans"';
+    DATA.board.forEach((s, i) => g.fillText(s, 1176, 124 + i * 30));
+    // plants & coffee
+    for (const [x, y] of [[1240, 300], [20, 300], [1240, 560], [610, 770]]) { g.fillStyle = '#8B6B4A'; rr(x - 12, y - 4, 24, 20, 4); g.fill(); g.fillStyle = '#3F8A3A'; g.beginPath(); g.arc(x, y - 12, 16, 0, 7); g.fill(); g.fillStyle = '#99C339'; g.beginPath(); g.arc(x + 6, y - 18, 8, 0, 7); g.fill(); }
+    g.fillStyle = '#5A4636'; rr(1190, 690, 56, 60, 8); g.fill(); g.fillStyle = '#fff'; g.font = '600 11px "IBM Plex Sans"'; g.fillText('кофе', 1203, 726);
+  }
+  function drawDesk(a) {
+    g.globalAlpha = a.status === 'soon' ? 0.55 : 1; drawDesk0(a); g.globalAlpha = 1;
+  }
+  function drawDesk0(a) {
+    const [x, y] = a.desk;
+    g.fillStyle = '#C9A877'; rr(x - 70, y - 30, 140, 64, 10); g.fill();            // desk
+    g.fillStyle = '#2B2F2A'; rr(x - 34, y - 26, 68, 38, 5); g.fill();               // monitor
+    const glow = a.state === 'work' ? (0.55 + 0.45 * Math.abs(Math.sin(simT * 3 + x))) : 0.25;
+    g.fillStyle = `rgba(153,195,57,${glow})`; rr(x - 30, y - 22, 60, 30, 3); g.fill();
+    if (a.state === 'work') { g.fillStyle = 'rgba(31,74,29,.8)'; for (let i = 0; i < 3; i++) g.fillRect(x - 24, y - 16 + i * 8, 20 + ((simT * 40 + i * 13 + x) % 26), 3); }
+    g.fillStyle = '#3A3F38'; rr(x - 24, y + 16, 48, 10, 3); g.fill();              // keyboard
+    // name plate
+    g.fillStyle = '#fff'; rr(x - 80, y + 76, 160, 22, 6); g.fill(); g.fillStyle = a.color; g.fillRect(x - 80, y + 76, 6, 22);
+    g.fillStyle = '#1C1F1A'; g.font = '600 12.5px "IBM Plex Sans"'; g.textAlign = 'center'; g.fillText(a.name, x + 3, y + 91); g.textAlign = 'left';
+    if (a.status === 'soon') { g.fillStyle = '#F6E7C9'; rr(x + 30, y - 46, 70, 16, 8); g.fill(); g.fillStyle = '#7A5410'; g.font = '600 10px "IBM Plex Sans"'; g.fillText('в разработке', x + 36, y - 34); }
+  }
+  function drawAgent(a) {
+    g.globalAlpha = a.status === 'soon' ? 0.45 : 1; drawAgent0(a); g.globalAlpha = 1;
+  }
+  function drawAgent0(a) {
+    const walking = a.state === 'go' || a.state === 'back';
+    const bob = walking ? Math.sin(a.walkPh) * 3 : Math.sin(simT * 2 + a.desk[0]) * 0.8;
+    const x = a.x, y = a.y + bob;
+    g.fillStyle = 'rgba(0,0,0,.12)'; g.beginPath(); g.ellipse(x, a.y + 20, 16, 6, 0, 0, 7); g.fill();
+    g.fillStyle = a.color; rr(x - 13, y - 6, 26, 26, 10); g.fill();                  // body
+    g.fillStyle = '#F1C9A5'; g.beginPath(); g.arc(x, y - 16, 11, 0, 7); g.fill();     // head
+    g.fillStyle = '#3B2A20'; g.beginPath(); g.arc(x, y - 19, 11, Math.PI, 0); g.fill(); // hair
+    if (a.state === 'work') { g.fillStyle = '#F1C9A5'; const k = Math.sin(simT * 16 + a.desk[0]) > 0 ? 2 : -2; g.fillRect(x - 12, y + 2 + k, 6, 5); g.fillRect(x + 6, y + 2 - k, 6, 5); }
+    if (a.carry) { g.fillStyle = '#fff'; rr(x + 10, y - 4, 18, 22, 3); g.fill(); g.strokeStyle = a.color; g.lineWidth = 2; g.stroke(); g.fillStyle = a.color; g.fillRect(x + 13, y + 2, 12, 2); g.fillRect(x + 13, y + 7, 9, 2); }
+    if (selected === a.id) { g.strokeStyle = '#99C339'; g.lineWidth = 3; g.beginPath(); g.ellipse(x, a.y + 20, 22, 9, 0, 0, 7); g.stroke(); }
+  }
+  function drawBubble(a) {
+    if (a.bubbleT <= 0 && selected !== a.id) return;
+    const text = a.bubble; g.font = '600 12.5px "IBM Plex Sans"';
+    const w = Math.min(260, g.measureText(text).width + 20), x = Math.min(W - w - 6, Math.max(6, a.x - w / 2)), y = a.y - 66;
+    g.fillStyle = 'rgba(255,255,255,.96)'; rr(x, y, w, 26, 12); g.fill(); g.strokeStyle = a.color; g.lineWidth = 1.5; g.stroke();
+    g.beginPath(); g.moveTo(a.x - 6, y + 26); g.lineTo(a.x, y + 34); g.lineTo(a.x + 6, y + 26); g.fillStyle = 'rgba(255,255,255,.96)'; g.fill();
+    g.fillStyle = '#1C1F1A'; g.save(); g.beginPath(); g.rect(x + 8, y, w - 16, 26); g.clip(); g.fillText(text, x + 10, y + 17); g.restore();
+  }
+  function draw() {
+    drawRoom(); A.forEach(drawDesk);
+    [...A].sort((p, q) => p.y - q.y).forEach(drawAgent);
+    A.forEach(drawBubble);
+  }
+  function loop(now) {
+    const dt = Math.min(0.05, (now - t0) / 1000); t0 = now;
+    if (playing && !reduce) step(dt * speed);
+    draw(); requestAnimationFrame(loop);
+  }
+
+  // ---------- side panel ----------
+  const CHIP = { work: 'этап идёт', done: 'этап выполнен', wait: 'ждёт', soon: 'в разработке' };
+  const STAGE = { writing: ['Пишется', '#B9C3AE'], qa: ['Проверка', '#E0B84A'], production: ['Производство', '#E89A3C'], review: ['Ждёт отзыва клиента', '#7FA7D9'],
+    fixing: ['Правки по отзыву', '#D9734A'], fixed: ['Правки внесены', '#5FA05A'], approved: ['Одобрено клиентом', '#2F6A2B'], rejected: ['Отклонено', '#B5452F'], published: ['Опубликовано', '#1F4A1D'] };
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  document.getElementById('hclient').textContent = DATA.client;
+  document.title = `AI-офис ${DATA.client} · ${DATA.month_label}`;
+  document.getElementById('hsub').textContent = `${A.length} агентов · ${DATA.month_label} · данные обновлены ${DATA.generated}`;
+  const kp = document.getElementById('kpis');
+  for (const [v, l] of DATA.kpis) { const d = el('div', 'kpi'); d.append(el('b', '', v), el('span', '', l)); kp.append(d); }
+  const st = document.getElementById('steps');
+  DATA.stages.forEach((s, i) => { if (i) st.append(el('span', 'arrow', '→')); const d = el('div', 'step ' + s.state); const b = el('b', '', String(i + 1)); d.append(b, ' ' + s.name, el('small', '', (s.state === 'done' ? '✓ ' : s.state === 'work' ? '● ' : '') + s.detail)); st.append(d); });
+  const counts = {}; DATA.pieces.forEach((p) => (counts[p.stage] = (counts[p.stage] || 0) + 1));
+  const lg = document.getElementById('legend');
+  for (const [k, [name, c]] of Object.entries(STAGE)) if (counts[k]) { const s = el('span'); const i = el('i'); i.style.background = c; s.append(i, `${name}: ${counts[k]}`); lg.append(s); }
+  { const f = document.getElementById('ideasForm'); f.href = DATA.ideas_form || '#';
+    const L = document.getElementById('ideasList'), esc = (x) => String(x || '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    L.innerHTML = (DATA.ideas || []).length ? DATA.ideas.map((i) => `<div class="idea"><div class="t">${i.kind === 'reference' ? '📎 Референс' : '✨ Задание · ' + esc(i.format)} ·
+      ${i.when === 'asap' ? 'как можно скорее' : 'план ' + esc(i.for_month)} · ${esc(i.who)} · ${esc(i.created)}</div>
+      ${i.kind === 'reference' && i.link ? `<a href="${esc(i.link)}" target="_blank" rel="noopener">${esc(i.link)}</a>` : ''}<div>${esc(i.text)}</div>
+      <div class="s">${esc(i.status)}${i.result ? ` · <a href="${esc(i.result)}" target="_blank" rel="noopener">смотреть</a>` : ''}</div></div>`).join('')
+      : '<div class="note">Пока нет идей и заданий. Отправить можно по кнопке выше — ссылка для Даны.</div>'; }
+  const pc = document.getElementById('pieces');
+  for (const p of DATA.pieces) { const [name, c] = STAGE[p.stage] || [p.stage, '#999']; const d = el('div', 'pc'); d.title = name; const i = el('i'); i.style.background = c;
+    d.append(i, el('b', '', p.n ? '№' + p.n : ''), el('span', 'f', p.format), el('span', 'tt', p.title)); pc.append(d); }
+  const fd = document.getElementById('feed');
+  for (const e of DATA.feed) { const li = el('li'); const ag = byId[e.agent]; const tx = el('div'); const who = el('span', 'who', ag ? ag.name : e.agent); if (ag) who.style.color = ag.color; tx.append(who, e.text); li.append(el('time', '', e.ts), tx); fd.append(li); }
+  if (!DATA.feed.length) fd.append(el('li', '', 'Пока нет действий в этом месяце.'));
+  const roster = document.getElementById('roster'), detail = document.getElementById('detail');
+  function renderRoster() {
+    roster.innerHTML = '';
+    for (const a of A) {
+      const el = document.createElement('div'); el.className = 'agent' + (a.id === selected ? ' sel' : ''); el.tabIndex = 0; el.setAttribute('role', 'button');
+      el.innerHTML = `<span class="dot" style="background:${a.color}"></span><div><div class="n">${a.name}<span class="chip ${a.status}">${CHIP[a.status] || a.status}</span></div><div class="t"></div></div>`;
+      el.querySelector('.t').textContent = a.state === 'sit' || a.state === 'work' ? a.tasks[a.task] : (a.carry ? `Несёт: ${a.carry}` : 'Возвращается к столу');
+      el.addEventListener('click', () => select(a.id));
+      el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(a.id); } });
+      roster.appendChild(el);
+    }
+  }
+  function renderDetail() {
+    const a = byId[selected];
+    detail.innerHTML = `<h3 style="color:${a.color}">${a.name} <span class="chip ${a.status}">${CHIP[a.status] || a.status}</span></h3><p></p><dl></dl><div class="note" style="margin-top:10px"></div>`;
+    detail.querySelector('.note').textContent = 'Сейчас: ' + a.tasks.join(' · ');
+    detail.querySelector('p').textContent = a.role;
+    const dl = detail.querySelector('dl');
+    for (const [k, v] of [['Инструменты', a.tools], ...a.stats]) { const dt = document.createElement('dt'); dt.textContent = k; const dd = document.createElement('dd'); dd.textContent = v; dl.append(dt, dd); }
+  }
+  function select(id) { selected = id; byId[id].bubbleT = 4; renderDetail(); renderRoster(); }
+  cv.addEventListener('click', (e) => {
+    const r = cv.getBoundingClientRect(), x = (e.clientX - r.left) * W / r.width, y = (e.clientY - r.top) * H / r.height;
+    let best = null, bd = 60;
+    for (const a of A) { const d = Math.min(Math.hypot(a.x - x, a.y - y), Math.hypot(a.desk[0] - x, a.desk[1] - y)); if (d < bd) { bd = d; best = a; } }
+    if (best) select(best.id);
+  });
+  const btnReplay = document.getElementById('replay'), btnPlay = document.getElementById('play'), btnSpeed = document.getElementById('speed'), modeEl = document.getElementById('mode');
+  function updateMode() {
+    if (mode === 'idle') { modeEl.className = 'mode'; modeEl.textContent = `Сейчас агенты не запущены · последний запуск ${DATA.generated}`; }
+    else { modeEl.className = 'mode replay'; modeEl.textContent = `Повтор месяца: передача ${Math.min(flowI, FLOW.length)} из ${FLOW.length}`; }
+  }
+  function startReplay() {
+    mode = 'replay'; flowI = 0; flowT = 0.3; playing = true;
+    A.forEach((a) => { if (a.state === 'sit') { a.state = 'work'; a.taskT = 1; } });
+    btnReplay.hidden = true; btnPlay.hidden = false; btnSpeed.hidden = false; btnPlay.textContent = 'Пауза'; btnPlay.classList.add('on'); updateMode();
+  }
+  function endReplay() {
+    mode = 'idle'; A.forEach((a) => { a.state = 'sit'; a.task = 0; a.bubble = a.tasks[0]; a.bubbleT = 4; });
+    btnReplay.hidden = false; btnPlay.hidden = true; btnSpeed.hidden = true; updateMode();
+  }
+  btnReplay.addEventListener('click', startReplay);
+  updateMode();
+  document.getElementById('play').addEventListener('click', (e) => { playing = !playing; e.target.textContent = playing ? 'Пауза' : 'Продолжить'; e.target.classList.toggle('on', playing); e.target.setAttribute('aria-pressed', String(playing)); });
+  document.getElementById('speed').addEventListener('click', (e) => { speed = speed === 1 ? 2 : speed === 2 ? 3 : 1; e.target.textContent = `Скорость ×${speed}`; e.target.setAttribute('aria-pressed', String(speed > 1)); });
+  setInterval(renderRoster, 1000);
+  renderDetail(); renderRoster();
+  if (reduce) { A.forEach((a) => (a.bubbleT = 99)); }
+  A.forEach((a) => { if (a.status === 'soon') { a.bubble = 'в разработке'; } });
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
