@@ -1,0 +1,32 @@
+name: Buffer channels (AL KARAL)
+# AL KARAL's own Buffer account, own key (repository secret BUFFER_KEY_AL_KARAL). For now it only lists the channels the key reaches and
+# keeps AL KARAL's own (posting/buffer_channels.json). It schedules nothing: there is no posting/queue.json here yet.
+on:
+  schedule:
+    - cron: "41 2 * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency: buffer-channels
+jobs:
+  channels:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Guard — no queue here yet
+        run: test ! -f posting/queue.json
+      - name: AL KARAL
+        env:
+          BUFFER_API_KEY: ${{ secrets.BUFFER_KEY_AL_KARAL }}
+          OWN_HANDLES: alkaral_bio
+        run: python .github/scripts/buffer_topup.py .
+      - name: Save the channel list
+        if: always()
+        run: |
+          git config user.name "buffer-channels"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A posting/buffer_channels.json 2>/dev/null || true
+          git diff --cached --quiet || (git commit -m "Buffer channels checked" && git pull --rebase -q && git push)
