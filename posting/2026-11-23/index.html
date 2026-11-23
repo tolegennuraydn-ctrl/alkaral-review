@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow"><title>AL KARAL · Публикации 2026-11-23 – 2026-11-29</title>
+<style>
+body{font-family:system-ui,-apple-system,sans-serif;background:#F2F4EE;color:#1C1F1A;margin:0;padding:20px}
+main{max-width:860px;margin:0 auto} h1{font-size:22px} .note{font-size:14px;color:#46503f;line-height:1.5}
+.card{background:#fff;border:1px solid #DCE3D3;border-radius:14px;padding:14px 16px;margin:12px 0} .card.done{opacity:.55}
+.when{font-size:14px;color:#2F6A2B} h3{margin:6px 0 10px;font-size:17px}
+.files{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px} .dl{background:#2F6A2B;color:#fff;text-decoration:none;border-radius:8px;padding:7px 11px;font-size:13px;font-weight:600}
+textarea{width:100%;min-height:110px;font:inherit;font-size:14px;border:1px solid #DCE3D3;border-radius:10px;padding:8px;box-sizing:border-box}
+.copy{margin-top:6px;font:inherit;font-weight:700;border:0;border-radius:8px;padding:8px 14px;background:#1F4A1D;color:#fff;cursor:pointer}
+.st{font-size:12px;color:#5d6a55;margin-top:6px}
+.marks{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center} .marks button{font:inherit;font-size:13px;border:1px solid #B9D69A;background:#F4FAF1;border-radius:8px;padding:6px 10px;cursor:pointer}
+.marks button.on{background:#2F6A2B;color:#fff;border-color:#2F6A2B} .ms{font-size:12px;color:#2F6A2B;font-weight:700}
+.ai{background:#FFF6DF;border:1px solid #EBCB7A;border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.5}
+</style><script>
+// Personal access for every client page (12 Nov 2026). The link a person gets carries their token once (…?t=<token>&r=<id>&name=<Name>).
+// It is kept on this device, taken out of the address bar (so it is not shared with a copied link or a screenshot) and sent with
+// every request as `t`. The web app decides who the writer is from the token alone. No token → the page is view-only.
+// The token arrives as …?t=<token> (personal link) or …#t=<token> (from the entry page where a client types their code — the part
+// after # is never sent to a server). It is kept per client (window.REVIEW_CLIENT), because several clients' sites can share one
+// web address and one browser: one client's login must never be offered to another client's pages.
+(function () {
+  var store = { get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+                set: function (k, v) { try { localStorage.setItem(k, v); } catch (e) { /* private mode: token lives for this tab */ } } };
+  var KEY = window.REVIEW_CLIENT ? 'review_token:' + window.REVIEW_CLIENT : 'review_token';
+  var q = new URLSearchParams(location.search), t = q.get('t'), hash = location.hash || '';
+  var h = /(^#|&)t=([^&]*)/.exec(hash);
+  if (!t && h) { try { t = decodeURIComponent(h[2]); } catch (e) { t = ''; } }
+  if (h) hash = hash.replace(/(^#|&)t=[^&]*/, '$1').replace(/^#&/, '#').replace(/^#$/, '');
+  if (t) {
+    store.set(KEY, t);
+    q.delete('t');
+    var rest = q.toString();
+    try { history.replaceState(null, '', location.pathname + (rest ? '?' + rest : '') + hash); } catch (e) { /* keep going */ }
+  }
+  // a client whose people logged in before logins were kept per client (window.REVIEW_LEGACY_TOKEN) keeps working without a new link
+  window.REVIEW_TOKEN = t || store.get(KEY) || (window.REVIEW_LEGACY_TOKEN && KEY !== 'review_token' ? store.get('review_token') : '') || '';
+  if (!window.REVIEW_TOKEN) {
+    document.addEventListener('DOMContentLoaded', function () {
+      if (window.REVIEW_NO_BANNER) return;   // the review page shows its own view-only notice
+      var bar = document.createElement('div');
+      bar.setAttribute('role', 'alert');
+      bar.style.cssText = 'background:#FFF6DF;border-bottom:1px solid #EBCB7A;padding:12px 20px;font:15px system-ui,-apple-system,sans-serif;color:#1C1F1A;text-align:center';
+      bar.textContent = 'Страница открыта только для просмотра. Чтобы сохранять решения и комментарии, откройте её по вашей персональной ссылке.';
+      document.body.insertBefore(bar, document.body.firstChild);
+    });
+  }
+})();
+</script>
+</head><body><main>
+<h1>AL KARAL · публикации 2026-11-23 – 2026-11-29</h1>
+<p class="note">Одна публикация в день в Instagram и TikTok, время — Алматы. Всё одобрено Даной. Видео уже со спокойной фоновой музыкой —
+песню в приложении добавлять не нужно. Как планировать: Instagram — Meta Business Suite → «Создать Reels / публикацию» → загрузить файл →
+вставить текст → «Запланировать» на дату и время. TikTok — TikTok Studio (tiktok.com/tiktokstudio/upload) → загрузить → вставить текст →
+«Запланировать». Карусели в TikTok — фото-режим.</p>
+<div class="ai" id="for-claude"><b>Инструкция для Claude in Chrome (English):</b> Schedule every post on this page that is not yet marked scheduled.
+For each day: download its file(s) with the buttons; in Meta Business Suite (business.facebook.com) create a Reel (videos) or a post
+(images; several images = carousel), upload the file(s), paste the caption exactly as shown (use «Скопировать текст»), choose Schedule
+for the date and time shown (Asia/Almaty), and confirm. Then in TikTok Studio (tiktok.com/tiktokstudio/upload) do the same
+(images → photo post), schedule for the same date and time. Never publish immediately, never change the caption, never add music
+(videos already have it). After each platform is scheduled, click the matching «✅ … запланировано» button on this page — that is how
+the team tracks it. Skip anything already marked. Never schedule a card marked «⏸ Снято с публикации»; if such a card says it is already
+scheduled somewhere, delete that scheduled post there. If something is unclear or fails, stop and say what happened.</div>
+<section class="card">
+  <div class="when"><b>Пн 23.11</b> · 20:00 (Алматы) · № · Carousel</div>
+  <h3>Сатып алмас бұрын білу керек 5 факт</h3>
+  <div class="files"><a class="dl" href="2026-11-23-2026-11-18-1.jpg" download>Слайд 1 ⬇</a><a class="dl" href="2026-11-23-2026-11-18-2.jpg" download>Слайд 2 ⬇</a><a class="dl" href="2026-11-23-2026-11-18-3.jpg" download>Слайд 3 ⬇</a><a class="dl" href="2026-11-23-2026-11-18-4.jpg" download>Слайд 4 ⬇</a><a class="dl" href="2026-11-23-2026-11-18-5.jpg" download>Слайд 5 ⬇</a><a class="dl" href="2026-11-23-2026-11-18-6.jpg" download>Слайд 6 ⬇</a><a class="dl" href="2026-11-23-2026-11-18-7.jpg" download>Слайд 7 ⬇</a><a class="dl" href="2026-11-23-2026-11-18-8.jpg" download>Слайд 8 ⬇</a></div>
+  <textarea readonly>AL KARAL сатып алудың 5 себебі. ✓ Табиғи шикізат — қазақстандық леонардит, гумин заттарына бай табиғи шөгінді ✓ 65% фульвоқышқыл минералдар мен қоректік заттарды жасушаға жеткізеді, 35% гумин қышқылы ағзаның қорғаныс механизмдерін ынталандырады ✓ Малға қауіпсіз: химиясыз, гормонсыз, артық доза қаупі жоқ ✓ Жемнің де, премикстің де орнын баспайды — мал жеп жатқанын жақсырақ сіңіруге көмектеседі ✓ Бұзауларға сүтпен немесе уызбен беруге болады. Тәулігіне +1 кг-ға дейін орташа салмақ қосу*. Сақтап қойыңыз. Kaspi-де 4 канистрден бастап жиынтықтар — сілтеме профильде. WhatsApp: +7 777 645 33 75
+*Нәтиже рационға, күтім жағдайына және малдың бастапқы күйіне байланысты
+
+RU: 5 фактов об AL KARAL перед покупкой. Ссылка на Kaspi — в профиле.
+
+#AlKaral #жемқоспасы #малшаруашылығы #фермер #5факт</textarea>
+  <button type="button" class="copy">Скопировать текст</button>
+  <div class="marks" data-date="2026-11-23">
+    <button type="button" data-p="instagram" data-s="scheduled">✅ Instagram: запланировано</button>
+    <button type="button" data-p="tiktok" data-s="scheduled">✅ TikTok: запланировано</button>
+    <button type="button" data-p="instagram" data-s="posted">Instagram: опубликовано</button>
+    <button type="button" data-p="tiktok" data-s="posted">TikTok: опубликовано</button>
+    <span class="ms"></span>
+  </div>
+  <div class="st">instagram: planned · tiktok: planned · youtube: not_for_carousel</div>
+</section>
+</main>
+<script>window.CFG={"url": "https://script.google.com/macros/s/AKfycbwmMn17LDiwZiK8vuKw0-dK31qMaHZMPuVUeZmpHPs5uyN93RpO70BWAiLC73AjNSoi/exec", "month": "2026-11"};
+async function mark(b){const box=b.closest('.marks'), ms=box.querySelector('.ms'); ms.textContent='Сохраняю…';
+  const body=JSON.stringify({op:'set',t:window.REVIEW_TOKEN,month:CFG.month,path:'submissions/posting-'+box.dataset.date+'-'+b.dataset.p,
+    data:{date:box.dataset.date,platform:b.dataset.p,status:b.dataset.s,at:new Date().toISOString(),who:'posting'}});
+  for(let t=0;t<3;t++){try{const r=await fetch(CFG.url,{method:'POST',body}); const j=await r.json(); if(j.ok){b.classList.add('on'); ms.textContent='Сохранено ✓'; return;}}catch(e){} await new Promise(r=>setTimeout(r,800*2**t));}
+  ms.textContent='Не сохранилось — нажмите ещё раз';}
+document.querySelectorAll('.marks button').forEach((b)=>b.addEventListener('click',()=>mark(b)));
+fetch(CFG.url,{method:'POST',body:JSON.stringify({op:'list',t:window.REVIEW_TOKEN,month:CFG.month})}).then(r=>r.json()).then(j=>{(j.docs||[]).forEach(d=>{
+  if(!d.path.startsWith('submissions/posting-'))return; const v=d.data; const box=document.querySelector('.marks[data-date="'+v.date+'"]'); if(!box)return;
+  box.querySelectorAll('button').forEach(b=>{if(b.dataset.p===v.platform&&(b.dataset.s===v.status||(v.status==='posted'&&b.dataset.s==='scheduled')))b.classList.add('on')});})}).catch(()=>{});
+document.querySelectorAll('.copy').forEach((b)=>b.addEventListener('click',async()=>{const t=b.previousElementSibling;
+try{await navigator.clipboard.writeText(t.value)}catch(e){t.select();document.execCommand('copy')} b.textContent='Скопировано ✓';setTimeout(()=>b.textContent='Скопировать текст',1500)}));</script>
+</body></html>
